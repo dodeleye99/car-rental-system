@@ -1,3 +1,5 @@
+from rental_shop import RentalShop
+
 
 class Customer(object):
 	"""
@@ -16,17 +18,33 @@ class Customer(object):
 		the customer when they make a rental, so that their order can be easily identified when they make a return.
 		"""
 
-	def inquire(self, rental_shop):
+	def inquire(self, rental_shop: RentalShop):
 		"""
-		Used to have the customer request the car stock of a given rental shop.
-		:param rental_shop:
-		:return:
+		Used to have the customer request the car stock of a given rental shop (as well as the prices).
+
+		:param rental_shop: a RentalShop object representing the car rental shop to inquire from.
+		:return: None
 		"""
-		pass
+		rental_shop.display_stock()
 
-	def rent_car(self, car_type, rental_shop):
-		pass
+	def rent_car(self, car_type, days, rental_shop: RentalShop):
+		"""
+		Used to allow the customer to request a rental of a particular type of car from a given rental shop.
 
-	def return_car(self, rental_shop):
-		pass
+		:param car_type: the type of the car to be rented
+		:param days: the number of days to rent the car
+		:param rental_shop: a RentalShop object representing the car rental shop to rent from
+		:return: None
+		"""
+
+		rental_shop.process_request(self.__customer_number, car_type, days)
+
+	def return_car(self, rental_shop: RentalShop):
+		"""
+		Used to allow a customer to return a car that they have previously rented from a rental shop
+		:param rental_shop: a RentalShop object representing the car rental shop they are returning a car to.
+		:return: None
+		"""
+
+		rental_shop.issue_bill(self.__customer_number)
 

@@ -1,6 +1,3 @@
-import sqlite3
-
-
 class RentalShop(object):
 	"""
 	This class is used to represent a car rental shop, allowing customers to request for stock, hire a car to rent,
