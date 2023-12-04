@@ -15,7 +15,7 @@ class RentalShop(object):
 		database system for managing its stock and rentals.
 		"""
 
-		self.__db_con = sqlite3.connect(f"{shop_id}.db")
+		self.__shop_id = shop_id
 		"""
 		Represents a connection to the rental shop's database, used to make queries on it as well as update it.
 		"""
