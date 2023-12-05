@@ -40,3 +40,6 @@ Thumbs.db
 ######################
 .idea
 __pycache__
+
+# Special directory used by program
+.databases

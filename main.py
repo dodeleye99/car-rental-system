@@ -7,7 +7,10 @@ def init():
 	Used to initialise customer and rental shop objects
 	:return:
 	"""
-	print("Initialising...(nothing yet to do, still unimplemented)")
+
+	car_shop = RentalShop("shop1")
+
+	print("Initialising...(still incomplete)")
 
 
 def inquire():
