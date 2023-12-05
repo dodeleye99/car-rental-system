@@ -39,3 +39,4 @@ Thumbs.db
 # Other #
 ######################
 .idea
+__pycache__
