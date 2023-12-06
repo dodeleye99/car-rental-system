@@ -45,12 +45,17 @@ def init_objects():
 	return customer, car_shop
 
 
-def inquire():
+def inquire(customer, car_shop):
 	"""
 	Used to request the car stock (and prices) from the rental shop.
+
+	:param customer: the customer inquiring from a rental shop
+	:param car_shop: the rental shop being inquired from
+	:return: None
 	"""
+
 	print("INQUIRING FROM CAR RENTAL SHOP:")
-	print("Sorry, this service is currently unavailable.")
+	customer.inquire(car_shop)
 
 
 def rent_car():
@@ -89,7 +94,7 @@ def main():
 
 		# Inquire : customer requests user stock
 		if user_option == "inquire":
-			inquire()
+			inquire(customer, rental_shop)
 
 		# Rent : customer makes a car rental request
 		elif user_option == "rent":

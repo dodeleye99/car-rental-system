@@ -28,15 +28,66 @@ class RentalShop(object):
 
 	def display_stock(self):
 		"""
-		Outputs the current available stock of each car type.
+		Outputs the current available stock of each car type, as well as pricing for each type.
 		"""
-		pass
+
+		# Import the cars, rentals, and car_types files from the database
+		cars = self._get_data(_CARS)
+		rentals = self._get_data(_CAR_RENTALS)
+		car_types = self._get_data(_CAR_TYPES)
+
+		# Consider only the non-rented cars - these will be considered the ones that are available to rent.
+		available_cars = cars.drop(rentals.index)
+
+		# If it turns out that there are none that are available, notify the user/customer.
+		if len(available_cars) == 0:
+			print("Sorry, there are currently no cars available for rent.")
+
+		# Otherwise, output the available stock.
+		else:
+			# Create a new DataFrame showing the number of available cars of EACH car_type.
+			car_type_stock = available_cars.groupby("car_type").size()
+
+			"""
+			Output the stock as a "pretty-printed" table, showing the number of cars of each type that are available to
+			rent.
+			"""
+			output_stock = pd.DataFrame(car_type_stock).reset_index().to_string(
+				index=False, header="")
+			print("\nAvailable car types to rent and their stock:\n\n" + output_stock)
+
+		"""
+		Output the pricing information of each car type as a "pretty-printed" table, showing the following daily rates:
+		- Under a week
+		- At least one week.
+		- VIP customers
+		"""
+		output_prices = car_types.to_string(
+			header=[
+				"", "<1w", "1w+", "VIP"
+			],
+			index=False, col_space=10,
+			float_format="{:.2f}".format    # (Display the strings with 2 decimal places)
+		)
+		print("\nPricing information for every car type (daily rates, in GBP):\n"+output_prices+"\n")
+
+		# len_max = max(map(len, car_type_stock.index))
+		#
+		# for c_type in car_type_stock.index:
+		# 	print(
+		# 		f"{c_type.rjust(len_max)}: {car_type_stock[c_type]}"
+		# 	)
+		#
+		# print("\nPricing information:")
+		# print(car_types.)
 
 	def process_request(self, customer_number, car_type, days):
 		pass
 
 	def issue_bill(self, customer_number):
 		pass
+
+	# ====== AUXILIARY METHODS ======
 
 	def __check_db_exists(self, create=True):
 		"""
@@ -68,9 +119,21 @@ class RentalShop(object):
 				_setup_car_types(db_dir)
 			return False
 
+	def _get_data(self, name):
+		"""
+		Used to import one of the rental shop's database files.
+		:param name: the name of the file to use (either 'cars', 'car_types', or 'car_rentals')
+		:return: a DataFrame object representing the imported database file.
+		"""
+
+		# Construct the path to the data file.
+		path = f"./{_DATABASE_DIRECTORY}/{self.__shop_id}/{name}.csv"
+
+		# Read the data, constructing a DataFrame out of it and then returning it.
+		return pd.read_csv(path)
+
 
 # ========== DATABASE SETUP FUNCTIONS ==========
-
 def _setup_cars(file_dir):
 	"""
 	Sets up a default file to store all the cars that exist in the rental shop.
@@ -105,10 +168,10 @@ def _setup_cars(file_dir):
 	}
 
 	# Create a DataFrame out of the above dictionary representing the car dataset.
-	cars = pd.DataFrame(data)
+	cars = pd.DataFrame(data).set_index("car_id")
 
 	# Create a CSV file out of the DataFrame. The name of the file will be "cars.csv"
-	cars.to_csv(f"{file_dir}/cars.csv")
+	cars.to_csv(f"{file_dir}/{_CARS}.csv")
 
 
 def _setup_rentals(file_dir):
@@ -143,10 +206,10 @@ def _setup_rentals(file_dir):
 	}
 
 	# Create a DataFrame out of the above dictionary representing the car rentals dataset.
-	rentals = pd.DataFrame(data)
+	rentals = pd.DataFrame(data).set_index("car_id")
 
 	# Create a CSV file out of the DataFrame. The name of the file will be "car_rentals.csv"
-	rentals.to_csv(f"{file_dir}/car_rentals.csv")
+	rentals.to_csv(f"{file_dir}/{_CAR_RENTALS}.csv")
 
 
 def _setup_car_types(file_dir):
@@ -182,10 +245,10 @@ def _setup_car_types(file_dir):
 	}
 
 	# Create a DataFrame out of the above dictionary representing the car types dataset.
-	car_types = pd.DataFrame(data)
+	car_types = pd.DataFrame(data).set_index("type_name")
 
 	# Create a CSV file out of the DataFrame. The name of the file will be "car_types.csv"
-	car_types.to_csv(f"{file_dir}/car_types.csv")
+	car_types.to_csv(f"{file_dir}/{_CAR_TYPES}.csv")
 
 
 # ========== AUXILIARY FUNCTIONS ==========
@@ -240,3 +303,8 @@ def _random_car_ids(n, seed=0):
 
 # Represents the name of the parent directory where shop databases are stored in.
 _DATABASE_DIRECTORY = ".databases"
+
+# The names (ignoring file extension) of each of the database files.
+_CARS = "cars"
+_CAR_RENTALS = "car_rentals"
+_CAR_TYPES = "car_types"
