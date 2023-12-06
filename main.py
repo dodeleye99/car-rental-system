@@ -53,8 +53,9 @@ def inquire(customer, car_shop):
 	:param car_shop: the rental shop being inquired from
 	:return: None
 	"""
-
 	print("INQUIRING FROM CAR RENTAL SHOP:")
+
+	# Have the customer ask the rental shop for the stock and prices.
 	customer.inquire(car_shop)
 
 
@@ -89,26 +90,40 @@ def main():
 
 	# The main loop
 	while running:
+
 		# Prompt user for what they want to do
-		user_option = input("What would you like to do? ")
+		print(
+			"\nWhat would you like to do?\n"
+			"1 INQUIRE for car stock and prices\n"
+			"2 RENT a particular type of car for a number of days\n"
+			"3 RETURN a rented car\n"
+			"4 EXIT the program"
+		)
+		# Get the user's input (converting it to lowercase.)
+		user_option = input("Input the number (or the first word) corresponding to your option:\n").lower()
 
 		# Inquire : customer requests user stock
-		if user_option == "inquire":
+		if user_option in ("1", "inquire"):
 			inquire(customer, rental_shop)
 
 		# Rent : customer makes a car rental request
-		elif user_option == "rent":
+		elif user_option in ("2", "rent"):
 			rent_car()
 
 		# Return : customer returns a car they borrowed
-		elif user_option == "return":
+		elif user_option in ("3", "return"):
 			return_car()
 
 		# Exit : user wants to end the program
-		elif user_option == "exit":
+		elif user_option in ("4", "exit"):
 			# Switch the flag to end the main loop
 			running = False
 
+		# At this point, the input is invalid, so notify the user before restarting the loop.
+		else:
+			print("\nSorry, but I don't understand your input. Read the prompt and try again.")
+
+	# Say goodbye to user as a way to mark the (official) end of the program.
 	print("Goodbye!")
 
 

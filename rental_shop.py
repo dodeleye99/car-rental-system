@@ -29,6 +29,7 @@ class RentalShop(object):
 	def display_stock(self):
 		"""
 		Outputs the current available stock of each car type, as well as pricing for each type.
+		:return: None
 		"""
 
 		# Import the cars, rentals, and car_types files from the database
@@ -70,16 +71,6 @@ class RentalShop(object):
 			float_format="{:.2f}".format    # (Display the strings with 2 decimal places)
 		)
 		print("\nPricing information for every car type (daily rates, in GBP):\n"+output_prices+"\n")
-
-		# len_max = max(map(len, car_type_stock.index))
-		#
-		# for c_type in car_type_stock.index:
-		# 	print(
-		# 		f"{c_type.rjust(len_max)}: {car_type_stock[c_type]}"
-		# 	)
-		#
-		# print("\nPricing information:")
-		# print(car_types.)
 
 	def process_request(self, customer_number, car_type, days):
 		pass
@@ -134,6 +125,7 @@ class RentalShop(object):
 
 
 # ========== DATABASE SETUP FUNCTIONS ==========
+
 def _setup_cars(file_dir):
 	"""
 	Sets up a default file to store all the cars that exist in the rental shop.
