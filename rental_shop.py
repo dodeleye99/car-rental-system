@@ -26,19 +26,30 @@ class RentalShop(object):
 		# Set up a new database if it already does exist.
 		self.__check_db_exists()
 
+	# def _output_current_stock(self):
+	#
+	# 	available_cars = self._get_available_cars()
+	#
+	# 	car_type_stock = available_cars.groupby("car_type").size()
+	#
+	# 	"""
+	# 	Output the stock as a "pretty-printed" table, showing the number of cars of each type that are available to
+	# 	rent.
+	# 	"""
+	# 	output_stock = car_type_stock.to_string(header=False)
+	# 	print(output_stock)
+
 	def display_stock(self):
 		"""
 		Outputs the current available stock of each car type, as well as pricing for each type.
 		:return: None
 		"""
 
-		# Import the cars, rentals, and car_types files from the database
-		cars = self._get_data(_CARS)
-		rentals = self._get_data(_CAR_RENTALS)
+		# Import the 'car_types' file from the database
 		car_types = self._get_data(_CAR_TYPES)
 
-		# Consider only the non-rented cars - these will be considered the ones that are available to rent.
-		available_cars = cars.drop(rentals.index)
+		# Get a dataset of all the cars that are currently available for renting.
+		available_cars = self._get_available_cars()
 
 		# If it turns out that there are none that are available, notify the user/customer.
 		if len(available_cars) == 0:
@@ -53,8 +64,7 @@ class RentalShop(object):
 			Output the stock as a "pretty-printed" table, showing the number of cars of each type that are available to
 			rent.
 			"""
-			output_stock = pd.DataFrame(car_type_stock).reset_index().to_string(
-				index=False, header="")
+			output_stock = car_type_stock.to_string(header=False)
 			print("\nAvailable car types to rent and their stock:\n\n" + output_stock)
 
 		"""
@@ -65,15 +75,101 @@ class RentalShop(object):
 		"""
 		output_prices = car_types.to_string(
 			header=[
-				"", "<1w", "1w+", "VIP"
+				"<1w", "1w+", "VIP"
 			],
-			index=False, col_space=10,
+			index=True,
+			index_names=False,   # (Do not show the index title 'car_types')
+			col_space=10,
 			float_format="{:.2f}".format    # (Display the strings with 2 decimal places)
 		)
 		print("\nPricing information for every car type (daily rates, in GBP):\n"+output_prices+"\n")
 
 	def process_request(self, customer_number, car_type, days):
-		pass
+		"""
+
+		:param customer_number:
+		:param car_type:
+		:param days:
+		:return:
+		"""
+
+		"""
+		=== 1) VALIDATION OF THE CAR TYPE ===
+		"""
+
+		# Import the 'car_types' file from the database
+		car_types = self._get_data(_CAR_TYPES)
+
+		# If it turns out that the requested car type does not exist as a record in the 'car_types' file, notify the
+		# user and exit returning False to indicate an unsuccessful process.
+		if car_type not in car_types.index:
+			print(f"Sorry, but the car type you entered ({car_type}) is unknown to the system.")
+			return False
+
+		"""
+		=== 2) CHECKING IF THE CAR TYPE IS IN STOCK ===
+		"""
+
+		# Get the 'car_rentals' file, to obtain all the cars currently being rented.
+		car_rentals = self._get_data(_CAR_RENTALS)
+		# Get a listing of all the cars available to rent.
+		available_cars = self._get_available_cars(rentals=car_rentals)
+
+		# Form a "selection" of all the cars that are og the given car type.
+		type_selection = available_cars["car_type"] == car_type
+		# Extract all such cars from the availability listing.
+		cars_of_type = available_cars[type_selection]
+
+		# If it turns out that there are no cars of the requested car type in stock, notify the
+		# user and exit returning False to indicate an unsuccessful process.
+		if len(cars_of_type) == 0:
+			print(f"Unfortunately, no cars of the selected type ({car_type}) are in stock.")
+			return False
+
+		"""
+		=== 3) PROCESSING THE CAR RENTAL REQUEST ===
+		"""
+
+		# Get the ID of the first car listed - let it be the one allocated to the customer.
+		car_id = cars_of_type.index[0]
+
+		# Get the current pricing information of the customer's desired car type.
+		rates = car_types.loc[car_type]
+
+		"""
+		The number of days the customer wants to rent the car determines the daily rate:
+		-   If under one week (i.e. less than 7 days), then the short term daily rate is applied.
+		-   Any longer (i.e. 7 days or more), then the long term daily rate is applied 
+			(cheaper than the short term rate)
+		"""
+		if days < 7:
+			r = rates["short_term_rate"]
+		else:
+			r = rates["long_term_rate"]
+
+		"""
+		Add a new row to the car rentals dataset, containing the following:
+		- The ID of the car being rented.
+		- The customer's number
+		- The daily rate charged
+		- THE number of days the car is being rented for.
+		"""
+		car_rentals.loc[car_id, ["customer_number", "rate", "days"]] = [customer_number, r, days]
+
+		# Apply these changes to the 'car_rentals' database file.
+		car_rentals.to_csv(self._get_file_dir(_CAR_RENTALS))
+
+		# Output a message confirming that the rental was successfully made.
+		print(
+			f"SUCCESS! You have rented a {car_type} car for {days} days. "
+			f"You will be charged £{r:.2f} per day.\n"
+			f"We hope that you enjoy our service.")
+
+		# At this point the rental was successful, so output True to indicate this.
+		return True
+
+		# print("\nUpdated stock for each car type:\n")
+		# self._output_current_stock()
 
 	def issue_bill(self, customer_number):
 		pass
@@ -110,18 +206,42 @@ class RentalShop(object):
 				_setup_car_types(db_dir)
 			return False
 
-	def _get_data(self, name):
+	def _get_data(self, name, index_col=0):
 		"""
 		Used to import one of the rental shop's database files.
 		:param name: the name of the file to use (either 'cars', 'car_types', or 'car_rentals')
+		:param index_col: the column to use as the index for the imported dataset. By default it is 0 (first column).
 		:return: a DataFrame object representing the imported database file.
 		"""
 
 		# Construct the path to the data file.
 		path = f"./{_DATABASE_DIRECTORY}/{self.__shop_id}/{name}.csv"
 
-		# Read the data, constructing a DataFrame out of it and then returning it.
-		return pd.read_csv(path)
+		# Read the data, constructing a DataFrame out of it (and specifying the column to use as an index)
+		# and then returning it.
+		return pd.read_csv(path, index_col=index_col)
+
+	def _get_available_cars(self, cars=None, rentals=None):
+		"""
+		Outputs a dataset of all the cars that are currently available for renting.
+		:param cars: a DataFrame representing the 'cars' file that may be passed if one exists locally
+		(for caching purposes). Otherwise, it will be imported as normal.
+		:param rentals: a DataFrame representing the 'car_rentals' file that may be passed if one exists locally
+		(for caching purposes). Otherwise, it will be imported as normal.
+
+		:return: a DatFrame consisting of all the listings of cars that as of present are available for renting.
+		"""
+		# Import the 'cars' file and 'car_rentals' files if any were not passed as arguments.
+		if cars is None:
+			cars = self._get_data(_CARS)
+		if rentals is None:
+			rentals = self._get_data(_CAR_RENTALS)
+
+		# Output only the non-rented cars - these will be considered the ones that are available to rent.
+		return cars.drop(rentals.index)
+
+	def _get_file_dir(self, name):
+		return f"./{_DATABASE_DIRECTORY}/{self.__shop_id}/{name}.csv"
 
 
 # ========== DATABASE SETUP FUNCTIONS ==========
@@ -284,6 +404,11 @@ def _random_car_ids(n, seed=0):
 	for i in range(n):
 		# Create a random id consisting of 2 letters, followed by 3 digits, followed by 3 letters.
 		car_id = "".join(rand_letters(2) + rand_digits(3) + rand_letters(3))
+
+		assert len(car_id) == 8, f"The car id should consist of exactly 8 digits, but it has {len(car_id)}"
+		assert car_id[:2].isalpha() and car_id[2:5].isdigit() and car_id[5:].isalpha(),\
+			f"The car id should be of form LLddLLL, (L = A-Z, d = 0-9), but it is {car_id}"
+
 		# Add it to the list.
 		id_list.append(car_id)
 

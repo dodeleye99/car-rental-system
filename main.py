@@ -45,7 +45,7 @@ def init_objects():
 	return customer, car_shop
 
 
-def inquire(customer, car_shop):
+def inquire(customer: Customer, car_shop: RentalShop):
 	"""
 	Used to request the car stock (and prices) from the rental shop.
 
@@ -53,18 +53,42 @@ def inquire(customer, car_shop):
 	:param car_shop: the rental shop being inquired from
 	:return: None
 	"""
-	print("INQUIRING FROM CAR RENTAL SHOP:")
+
+	print("\nINQUIRING FROM CAR RENTAL SHOP:")
 
 	# Have the customer ask the rental shop for the stock and prices.
 	customer.inquire(car_shop)
 
 
-def rent_car():
+def rent_car(customer: Customer, car_shop: RentalShop):
 	"""
 	Used to allow the user to rent a car.
+
+	:param customer: the customer inquiring from a rental shop
+	:param car_shop: the rental shop being inquired from
+	:return: None
 	"""
-	print("RENTING A CAR:")
-	print("Sorry, this service is currently unavailable.")
+
+	print("\nRENTING A CAR:")
+
+	# === Prompt the user for the type of car to rent and the number of days ===
+
+	# Convert input of car_type lowercase so that it is not case-sensitive.
+	car_type = input("Enter the type of car you would like to rent:\n").lower()
+	days = input("Enter the number of days you would like to rent the car:\n")
+
+	# Validation 1: ensure that the number of days is an integer.
+	if not days.isdigit():
+		print("The number of days must be an integer!")
+	else:
+		days = int(days)
+
+		# Validation 2: ensure that the number of days is greater than 0.
+		if days <= 0:
+			print("The number of days must be positive!")
+		else:
+			# At this point, validation is complete. Have the customer ask the car shop to make the rental.
+			customer.rent_car(car_type, int(days), car_shop)
 
 
 def return_car():
@@ -108,7 +132,7 @@ def main():
 
 		# Rent : customer makes a car rental request
 		elif user_option in ("2", "rent"):
-			rent_car()
+			rent_car(customer, rental_shop)
 
 		# Return : customer returns a car they borrowed
 		elif user_option in ("3", "return"):

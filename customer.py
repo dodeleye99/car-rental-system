@@ -35,10 +35,10 @@ class Customer(object):
 		:param car_type: the type of the car to be rented
 		:param days: the number of days to rent the car
 		:param rental_shop: a RentalShop object representing the car rental shop to rent from
-		:return: None
+		:return: True if the renal was successfully made. False otherwise.
 		"""
-
-		rental_shop.process_request(self.__customer_number, car_type, days)
+		# Call the rental shop to process the customer's request (whether successful or not).
+		return rental_shop.process_request(self.__customer_number, car_type, days)
 
 	def return_car(self, rental_shop: RentalShop):
 		"""
