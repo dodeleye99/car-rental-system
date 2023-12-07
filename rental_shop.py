@@ -2,6 +2,7 @@ import os
 import pandas as pd
 import random
 import string
+import numpy as np
 
 
 class RentalShop(object):
@@ -26,19 +27,6 @@ class RentalShop(object):
 		# Set up a new database if it already does exist.
 		self.__check_db_exists()
 
-	# def _output_current_stock(self):
-	#
-	# 	available_cars = self._get_available_cars()
-	#
-	# 	car_type_stock = available_cars.groupby("car_type").size()
-	#
-	# 	"""
-	# 	Output the stock as a "pretty-printed" table, showing the number of cars of each type that are available to
-	# 	rent.
-	# 	"""
-	# 	output_stock = car_type_stock.to_string(header=False)
-	# 	print(output_stock)
-
 	def display_stock(self):
 		"""
 		Outputs the current available stock of each car type, as well as pricing for each type.
@@ -51,6 +39,10 @@ class RentalShop(object):
 		# Get a dataset of all the cars that are currently available for renting.
 		available_cars = self._get_available_cars()
 
+		# Get the names of all the car types that are abbreviations, to know which ones need to be capitalised when
+		# displayed to the user.
+		abbrev_types = self._get_abbrev_types(car_types)
+
 		# If it turns out that there are none that are available, notify the user/customer.
 		if len(available_cars) == 0:
 			print("Sorry, there are currently no cars available for rent.")
@@ -60,6 +52,9 @@ class RentalShop(object):
 			# Create a new DataFrame showing the number of available cars of EACH car_type.
 			car_type_stock = available_cars.groupby("car_type").size()
 
+			# Cast the abbreviated type names to uppercase.
+			car_type_stock = car_type_stock.rename(lambda x: x.upper() if x in abbrev_types else x)
+			
 			"""
 			Output the stock as a "pretty-printed" table, showing the number of cars of each type that are available to
 			rent.
@@ -67,6 +62,8 @@ class RentalShop(object):
 			output_stock = car_type_stock.to_string(header=False)
 			print("\nAvailable car types to rent and their stock:\n\n" + output_stock)
 
+		# Cast the abbreviated type names to uppercase.
+		car_types = car_types.rename(lambda x: x.upper() if x in abbrev_types else x)
 		"""
 		Output the pricing information of each car type as a "pretty-printed" table, showing the following daily rates:
 		- Under a week
@@ -74,6 +71,7 @@ class RentalShop(object):
 		- VIP customers
 		"""
 		output_prices = car_types.to_string(
+			columns=["short_term_rate","long_term_rate","vip_rate"],
 			header=[
 				"<1w", "1w+", "VIP"
 			],
@@ -86,11 +84,13 @@ class RentalShop(object):
 
 	def process_request(self, customer_number, car_type, days):
 		"""
+		Takes in a customer's request to rent a particular kind of car for a certain number of days, and after checking
+		whether it would be possible, it proceeds to process the request and store it in the system's database.
 
-		:param customer_number:
-		:param car_type:
-		:param days:
-		:return:
+		:param customer_number: the numerical ID of the customer who would like to rent a car.
+		:param car_type: the type of car they would like to rent.
+		:param days: the number of days they would like to rent the car.
+		:return: True if the process was successful. False otherwise.
 		"""
 
 		"""
@@ -159,6 +159,10 @@ class RentalShop(object):
 		# Apply these changes to the 'car_rentals' database file.
 		car_rentals.to_csv(self._get_file_dir(_CAR_RENTALS))
 
+		# Convert the customer's selected car type to upper case if it is an abbreviated name.
+		if car_type in self._get_abbrev_types(car_types):
+			car_type = car_type.upper()
+
 		# Output a message confirming that the rental was successfully made.
 		print(
 			f"SUCCESS! You have rented a {car_type} car for {days} days. "
@@ -215,7 +219,7 @@ class RentalShop(object):
 		"""
 
 		# Construct the path to the data file.
-		path = f"./{_DATABASE_DIRECTORY}/{self.__shop_id}/{name}.csv"
+		path = self._get_file_dir(name)
 
 		# Read the data, constructing a DataFrame out of it (and specifying the column to use as an index)
 		# and then returning it.
@@ -241,7 +245,42 @@ class RentalShop(object):
 		return cars.drop(rentals.index)
 
 	def _get_file_dir(self, name):
+		"""
+		Outputs the path to the given database file's name.
+		:param name: the name of the database file
+		:return: a string containing the relative path to the database file.
+		"""
+
+		"""
+		The format is as follows:
+		
+		./<DB-DIR>/<SHOP-ID>/<name>.csv
+		
+		- DB-DIR: name of the directory for all car shop databases
+		- SHOP-ID: the identifier for the car rental shop
+		- name: the name of the database file (or 'table') to extract.
+		"""
 		return f"./{_DATABASE_DIRECTORY}/{self.__shop_id}/{name}.csv"
+
+	def _get_abbrev_types(self, car_types=None):
+		"""
+		Outputs all the car type names that are abbreviations (i.e. made up of initials of some multi-word name).
+		The purpose of identifying such names is so that when displayed to the user they can be capitalised.
+		(E.g. 'suv' displayed as 'SUV')
+		:param car_types: a DataFrame representing the 'car_types' file that may be passed if one exists locally
+		(for caching purposes).
+		:return: a list containing all the car types that are abbreviations.
+		"""
+		# Import the 'car_types' file if it was not passed as an argument.
+		if car_types is None:
+			car_types = self._get_data(_CAR_TYPES)
+
+		# Ensure the index of the car_types dataset is 'type_name'.
+		if car_types.index.name != 'type_name':
+			car_types = car_types.set_index('type_name', drop=False)
+
+		# Extract the car types that are abbreviations (i.e the "abbrev" field is True.), outputting result as a list.
+		return car_types[car_types["abbrev"]].index.to_list()
 
 
 # ========== DATABASE SETUP FUNCTIONS ==========
@@ -335,22 +374,24 @@ def _setup_car_types(file_dir):
 	Format of the file:
 
 	type_name (ID): the name of the car type
+	abbrev: used to indicate whether the name is an abbreviation of the real name.
 	short_term_rate: the daily rate charged for renting the car for less than a week
 	long_term_rate: the daily rate charged for renting the car for one week or more.
 	vip_rate: the daily rate charged for VIP customers.
 	
 	
 	The expected dataset:
-	--------------------------------------------------
-	type_name  short_term_rate long_term_rate vip_rate
-	--------------------------------------------------
-	hatchback             30.0           50.0    100.0
-	sedan                 25.0           40.0     90.0
-	suv                   20.0           35.0     80.0
+	--------------------------------------------------------------------
+	type_name   abbrev       short_term_rate   long_term_rate   vip_rate
+	--------------------------------------------------------------------
+	hatchback   False         0.0              50.0             100.0
+	sedan       False        25.0              40.0              90.0
+	suv         True         20.0              35.0              80.0
 	"""
 
 	data = {
 		"type_name": ["hatchback", "sedan", "suv"],
+		"abbrev":    [False, False, True],
 		"short_term_rate": [30.0, 50.0, 100.0],
 		"long_term_rate":  [25.0, 40.0, 90.0],
 		"vip_rate":        [20.0, 35.0, 80.0]
