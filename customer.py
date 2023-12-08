@@ -25,8 +25,8 @@ class Customer(object):
 		:param rental_shop: a RentalShop object representing the car rental shop to inquire from.
 		:return: None
 		"""
-		# Simply ask for the rental shop to display the available stock.
-		rental_shop.display_stock()
+		# Simply ask for the rental shop to display the available stock (and pricing).
+		rental_shop.display_stock_and_prices()
 
 	def rent_car(self, car_type, days, rental_shop: RentalShop):
 		"""

@@ -29,7 +29,7 @@ def init_objects():
 		if not customer_number.isdigit():
 			print("Invalid format (must contain only digits)\n")
 
-		# Validation #1: make sure that their input consists of six characters (i.e. a 6-digit number)
+		# Validation #2: make sure that their input consists of six characters (i.e. a 6-digit number)
 		elif len(customer_number) != 6:
 			print("Invalid format (must be a six-digit number)\n")
 

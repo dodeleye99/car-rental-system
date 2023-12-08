@@ -2,7 +2,6 @@ import os
 import pandas as pd
 import random
 import string
-import numpy as np
 
 
 class RentalShop(object):
@@ -27,43 +26,96 @@ class RentalShop(object):
 		# Set up a new database if it already does exist.
 		self.__check_db_exists()
 
-	def display_stock(self):
+	def display_stock_and_prices(self):
 		"""
 		Outputs the current available stock of each car type, as well as pricing for each type.
-		:return: None
+		:return: True if there is at least one car in stock. False otherwise.
 		"""
 
-		# Import the 'car_types' file from the database
-		car_types = self._get_data(_CAR_TYPES)
+		# Output all the available stock of each cart type.
+		in_stock = self._output_stock()
+
+		# If there are cars in stock, output the pricing information.
+		if in_stock:
+			self._output_prices()
+
+		# Otherwise, give an appropriate message.
+		else:
+			print("Sorry, there are currently no cars available for rent.")
+
+		return in_stock
+
+	def _output_stock(self, msg="Available car types to rent and their stock:"):
+		"""
+		Outputs the current available stock of each car type.
+		:param msg: the message/caption to output accompanying the displayed stock.
+		:return: True if there is at least one car in stock. False otherwise.
+		"""
 
 		# Get a dataset of all the cars that are currently available for renting.
 		available_cars = self._get_available_cars()
 
-		# Get the names of all the car types that are abbreviations, to know which ones need to be capitalised when
-		# displayed to the user.
-		abbrev_types = self._get_abbrev_types(car_types)
-
-		# If it turns out that there are none that are available, notify the user/customer.
+		# If it turns out that there are none that are available, exit and return False, to indicate that there is
+		# no stock.
 		if len(available_cars) == 0:
-			print("Sorry, there are currently no cars available for rent.")
-
+			return False
 		# Otherwise, output the available stock.
 		else:
-			# Create a new DataFrame showing the number of available cars of EACH car_type.
+			# Create a new Series showing the number of available cars of EACH car_type.
 			car_type_stock = available_cars.groupby("car_type").size()
+
+			"""
+			Adding also the unavailable car types to the list.
+			"""
+			# Obtain a list of all the car types recorded on the system.
+			types_list = self._get_data(_CAR_TYPES).index.to_list()
+			# Construct a list of all the available car types
+			avail_types_list = car_type_stock.index.to_list()
+
+			# Use these lists to get the set of all car types that are not in stock.
+			missing_types = set(types_list) - set(avail_types_list)
+
+			# List each of them in the car_type_stock Series as (out of stock).
+			for t in missing_types:
+				car_type_stock[t] = "out of stock"
+
+			"""
+			Upper-casing abbreviated names
+			"""
+			# Get the names of all the car types that are abbreviations, to know which ones need to be capitalised when
+			# displayed to the user.
+			abbrev_types = self._get_abbrev_types()
 
 			# Cast the abbreviated type names to uppercase.
 			car_type_stock = car_type_stock.rename(lambda x: x.upper() if x in abbrev_types else x)
-			
+			# Ensure the type names are listed in alphabetical order
+			car_type_stock = car_type_stock.sort_index(key=lambda x: x.str.lower())
+
 			"""
 			Output the stock as a "pretty-printed" table, showing the number of cars of each type that are available to
 			rent.
 			"""
 			output_stock = car_type_stock.to_string(header=False)
-			print("\nAvailable car types to rent and their stock:\n\n" + output_stock)
+			print(f"\n{msg}\n\n" + output_stock)
+
+			# Output True to indicate that at least one car is in stock.
+			return True
+
+	def _output_prices(self, car_types=None):
+		"""
+		Outputs the pricing information for each car type.
+		:return: None
+		"""
+		if car_types is None:
+			car_types = self._get_data(_CAR_TYPES)
+
+		# Get the names of all the car types that are abbreviations, to know which ones need to be capitalised when
+		# displayed to the user.
+		abbrev_types = self._get_abbrev_types(car_types)
 
 		# Cast the abbreviated type names to uppercase.
 		car_types = car_types.rename(lambda x: x.upper() if x in abbrev_types else x)
+
 		"""
 		Output the pricing information of each car type as a "pretty-printed" table, showing the following daily rates:
 		- Under a week
@@ -71,7 +123,7 @@ class RentalShop(object):
 		- VIP customers
 		"""
 		output_prices = car_types.to_string(
-			columns=["short_term_rate","long_term_rate","vip_rate"],
+			columns=["short_term_rate", "long_term_rate", "vip_rate"],
 			header=[
 				"<1w", "1w+", "VIP"
 			],
@@ -82,10 +134,66 @@ class RentalShop(object):
 		)
 		print("\nPricing information for every car type (daily rates, in GBP):\n"+output_prices+"\n")
 
+	# def display_stock(self):
+	# 	"""
+	# 	Outputs the current available stock of each car type, as well as pricing for each type.
+	# 	:return: None
+	# 	"""
+	#
+	# 	# Import the 'car_types' file from the database
+	# 	car_types = self._get_data(_CAR_TYPES)
+	#
+	# 	# Get a dataset of all the cars that are currently available for renting.
+	# 	available_cars = self._get_available_cars()
+	#
+	# 	# Get the names of all the car types that are abbreviations, to know which ones need to be capitalised when
+	# 	# displayed to the user.
+	# 	abbrev_types = self._get_abbrev_types(car_types)
+	#
+	# 	# If it turns out that there are none that are available, notify the user/customer.
+	# 	if len(available_cars) == 0:
+	# 		print("Sorry, there are currently no cars available for rent.")
+	#
+	# 	# Otherwise, output the available stock.
+	# 	else:
+	# 		# Create a new Series showing the number of available cars of EACH car_type.
+	# 		car_type_stock = available_cars.groupby("car_type").size()
+	#
+	# 		# Cast the abbreviated type names to uppercase.
+	# 		car_type_stock = car_type_stock.rename(lambda x: x.upper() if x in abbrev_types else x)
+	#
+	# 		"""
+	# 		Output the stock as a "pretty-printed" table, showing the number of cars of each type that are available to
+	# 		rent.
+	# 		"""
+	# 		output_stock = car_type_stock.to_string(header=False)
+	# 		print("\nAvailable car types to rent and their stock:\n\n" + output_stock)
+	#
+	# 	# Cast the abbreviated type names to uppercase.
+	# 	car_types = car_types.rename(lambda x: x.upper() if x in abbrev_types else x)
+	# 	"""
+	# 	Output the pricing information of each car type as a "pretty-printed" table, showing the following daily rates:
+	# 	- Under a week
+	# 	- At least one week.
+	# 	- VIP customers
+	# 	"""
+	# 	output_prices = car_types.to_string(
+	# 		columns=["short_term_rate","long_term_rate","vip_rate"],
+	# 		header=[
+	# 			"<1w", "1w+", "VIP"
+	# 		],
+	# 		index=True,
+	# 		index_names=False,   # (Do not show the index title 'car_types')
+	# 		col_space=10,
+	# 		float_format="{:.2f}".format    # (Display the strings with 2 decimal places)
+	# 	)
+	# 	print("\nPricing information for every car type (daily rates, in GBP):\n"+output_prices+"\n")
+
 	def process_request(self, customer_number, car_type, days):
 		"""
 		Takes in a customer's request to rent a particular kind of car for a certain number of days, and after checking
-		whether it would be possible, it proceeds to process the request and store it in the system's database.
+		whether it would be possible (i.e. stock availability), it proceeds to process the request and store it in the
+		system's database.
 
 		:param customer_number: the numerical ID of the customer who would like to rent a car.
 		:param car_type: the type of car they would like to rent.
@@ -165,9 +273,17 @@ class RentalShop(object):
 
 		# Output a message confirming that the rental was successfully made.
 		print(
-			f"SUCCESS! You have rented a {car_type} car for {days} days. "
+			f"\nOrder successful! You have rented a {car_type} car for {days} days.\n"
+			f"The car's vehicle registration plate is {car_id}.\n"
 			f"You will be charged £{r:.2f} per day.\n"
 			f"We hope that you enjoy our service.")
+
+		# Display the updated stock
+		in_stock = self._output_stock(msg="Updated stock for each car type:")
+
+		# If there were no cars in stock, give an appropriate message.
+		if not in_stock:
+			print("\n(There are now no more cars available for rent.)")
 
 		# At this point the rental was successful, so output True to indicate this.
 		return True
@@ -445,10 +561,6 @@ def _random_car_ids(n, seed=0):
 	for i in range(n):
 		# Create a random id consisting of 2 letters, followed by 3 digits, followed by 3 letters.
 		car_id = "".join(rand_letters(2) + rand_digits(3) + rand_letters(3))
-
-		assert len(car_id) == 8, f"The car id should consist of exactly 8 digits, but it has {len(car_id)}"
-		assert car_id[:2].isalpha() and car_id[2:5].isdigit() and car_id[5:].isalpha(),\
-			f"The car id should be of form LLddLLL, (L = A-Z, d = 0-9), but it is {car_id}"
 
 		# Add it to the list.
 		id_list.append(car_id)
