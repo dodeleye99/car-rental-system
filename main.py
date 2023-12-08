@@ -54,7 +54,7 @@ def inquire(customer: Customer, car_shop: RentalShop):
 	:return: None
 	"""
 
-	print("\nINQUIRING FROM CAR RENTAL SHOP:")
+	print("\nINQUIRING FROM CAR RENTAL SHOP:\n")
 
 	# Have the customer ask the rental shop for the stock and prices.
 	customer.inquire(car_shop)
@@ -69,7 +69,7 @@ def rent_car(customer: Customer, car_shop: RentalShop):
 	:return: None
 	"""
 
-	print("\nRENTING A CAR:")
+	print("\nRENTING A CAR:\n")
 
 	# === Prompt the user for the type of car to rent and the number of days ===
 
@@ -81,6 +81,7 @@ def rent_car(customer: Customer, car_shop: RentalShop):
 	if not days.isdigit():
 		print("The number of days must be an integer!")
 	else:
+		# Convert to an integer (since we can be sure that it is one)
 		days = int(days)
 
 		# Validation 2: ensure that the number of days is greater than 0.
@@ -88,7 +89,7 @@ def rent_car(customer: Customer, car_shop: RentalShop):
 			print("The number of days must be positive!")
 		else:
 			# At this point, validation is complete. Have the customer ask the car shop to make the rental.
-			customer.rent_car(car_type, int(days), car_shop)
+			customer.rent_car(car_type, days, car_shop)
 
 
 def return_car():
