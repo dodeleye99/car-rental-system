@@ -5,35 +5,45 @@ from rental_shop import RentalShop
 def init_objects():
 	"""
 	Used to initialise customer and rental shop objects.
-	The user will be allowed to enter an identifier to use for the customer.
+	The user will be allowed to enter an identifier to use for the
+	customer.
 
-	:return: a tuple consisting of a Customer object followed by a RentalShop object.
+	:return: a tuple consisting of a Customer object followed by a
+	RentalShop object.
 	"""
 
 	# Initialise a car shop with identifier 'shop1'
 	car_shop = RentalShop("shop1")
 
-	# Create a variable that will store the customer number inputted by the user.
+	# Create a variable that will store the customer number inputted by
+	# the user.
 	customer_number = "000000"
 
-	# Use a flag for validating the user's input for the customer number.
+	# Use a flag for validating the user's input for the
+	# customer number.
 	validated = False
 
-	# As long as validation is not complete, have the user enter their customer number.
+	# As long as validation is not complete, have the user enter their
+	# customer number.
 	while not validated:
 
 		# Prompt the user to enter their customer number.
-		customer_number = input("Please enter your six-digit customer number: ")
+		customer_number = input(
+			"Please enter your six-digit customer number: "
+		)
 
-		# Validation #1: make sure that their input consists of only digits
+		# Validation #1: make sure that their input consists of
+		# only digits
 		if not customer_number.isdigit():
 			print("Invalid format (must contain only digits)\n")
 
-		# Validation #2: make sure that their input consists of six characters (i.e. a 6-digit number)
+		# Validation #2: make sure that their input consists of
+		# six characters (i.e. a 6-digit number)
 		elif len(customer_number) != 6:
 			print("Invalid format (must be a six-digit number)\n")
 
-		# At this point, validation is complete, so prepare to end the loop.
+		# At this point, validation is complete, so prepare to
+		# end the loop.
 		else:
 			print("Customer number accepted!")
 			validated = True
@@ -41,7 +51,8 @@ def init_objects():
 	# Instantiate a Customer object with the inputted customer number.
 	customer = Customer(customer_number)
 
-	# Output the newly created Customer and RentalShop objects (as a tuple).
+	# Output the newly created Customer and RentalShop objects
+	# (as a tuple).
 	return customer, car_shop
 
 
@@ -71,9 +82,10 @@ def rent_car(customer: Customer, car_shop: RentalShop):
 
 	print("\nRENTING A CAR:\n")
 
-	# === Prompt the user for the type of car to rent and the number of days ===
+	# === Prompt user for the type of car to rent and number of days ===
 
-	# Convert input of car_type lowercase so that it is not case-sensitive.
+	# Convert input of car_type to lowercase so that it is
+	# not case-sensitive.
 	car_type = input("Enter the type of car you would like to rent:\n").lower()
 	days = input("Enter the number of days you would like to rent the car:\n")
 
@@ -84,11 +96,12 @@ def rent_car(customer: Customer, car_shop: RentalShop):
 		# Convert to an integer (since we can be sure that it is one)
 		days = int(days)
 
-		# Validation 2: ensure that the number of days is greater than 0.
+		# Validation 2: ensure that number of days is greater than 0.
 		if days <= 0:
 			print("The number of days must be positive!")
 		else:
-			# At this point, validation is complete. Have the customer ask the car shop to make the rental.
+			# At this point, validation is complete. Have the customer
+			# ask the car shop to make the rental.
 			customer.rent_car(car_type, days, car_shop)
 
 
@@ -102,12 +115,14 @@ def return_car():
 
 def main():
 	"""
-	Represents the main entry point of the program, immediately run when this script is executed
+	Represents the main entry point of the program, immediately run when
+	this script is executed.
 	"""
 
 	print("Hello! Welcome to the Car Rental System\n")
 
-	# Create a flag do determine whether the main loop should still br running
+	# Create a flag do determine whether the main loop should still
+	# be running
 	running = True
 
 	# Initialise the customer and the rental shop data
@@ -125,7 +140,10 @@ def main():
 			"4 EXIT the program"
 		)
 		# Get the user's input (converting it to lowercase.)
-		user_option = input("Input the number (or the first word) corresponding to your option:\n").lower()
+		user_option = input(
+			"Input the number (or the first word) "
+			"corresponding to your option:\n"
+		).lower()
 
 		# Inquire : customer requests user stock
 		if user_option in ("1", "inquire"):
@@ -144,11 +162,16 @@ def main():
 			# Switch the flag to end the main loop
 			running = False
 
-		# At this point, the input is invalid, so notify the user before restarting the loop.
+		# At this point, the input is invalid, so notify the user before
+		# restarting the loop.
 		else:
-			print("\nSorry, but I don't understand your input. Read the prompt and try again.")
+			print(
+				"\nSorry, but I don't understand your input. "
+				"Read the prompt and try again."
+			)
 
-	# Say goodbye to user as a way to mark the (official) end of the program.
+	# Say goodbye to user as a way to mark the (official) end of the
+	# program.
 	print("Goodbye!")
 
 
