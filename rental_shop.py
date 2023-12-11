@@ -52,6 +52,381 @@ class RentalShop(object):
 		# were any cars in stock.
 		return in_stock
 
+	def process_request(self, customer_number, car_type, days):
+		"""
+		Takes in a customer's request to rent a particular kind of car
+		for a certain number of days, and after checking whether it
+		would be possible (i.e. stock availability), it proceeds to
+		process the request and store it in the system's database.
+
+		:param customer_number: the numerical ID of the customer who
+		would like to rent a car.
+		:param car_type: the type of car they would like to rent.
+		:param days: the number of days they would like to rent the car.
+		:return: True if the process was successful. False otherwise.
+		"""
+
+		"""
+		=== 1) VALIDATION OF THE CAR TYPE ===
+		"""
+
+		# Import the 'car_types' file from the database
+		car_types = self._get_data(_CAR_TYPES)
+
+		# If it turns out that the requested car type does not exist as
+		# a record in the 'car_types' file, notify the user and exit
+		# returning False to indicate an unsuccessful process.
+		if car_type not in car_types.index:
+			print(
+				f"\nSorry, but the car type you entered ({car_type})"
+				f"is unknown to the system."
+			)
+			return False
+
+		"""
+		=== 2) CHECKING IF THE CAR TYPE IS IN STOCK ===
+		"""
+
+		# Get the 'car_rentals' file, to obtain all the cars currently
+		# being rented.
+		car_rentals = self._get_data(_CAR_RENTALS)
+		# Get a listing of all the cars available to rent.
+		available_cars = self._get_available_cars(rentals=car_rentals)
+
+		# Form a "selection" of all the cars that are og the given car
+		# type.
+		type_selection = available_cars["car_type"] == car_type
+		# Extract all such cars from the availability listing.
+		cars_of_type = available_cars[type_selection]
+
+		# If it turns out that there are no cars of the requested
+		# car type in stock, notify the user and exit returning False
+		# to indicate an unsuccessful process.
+		if len(cars_of_type) == 0:
+			print(
+				f"\nUnfortunately, no cars of the selected type "
+				f"({car_type}) are in stock."
+			)
+			return False
+
+		"""
+		=== 3) PROCESSING THE CAR RENTAL REQUEST ===
+		"""
+
+		# Get the ID of the first car listed - let it be the one allocated
+		# to the customer.
+		car_id = cars_of_type.index[0]
+
+		# Get the current pricing information of the customer's
+		# desired car type.
+		rates = car_types.loc[car_type]
+
+		"""
+		The number of days the customer wants to rent the car determines 
+		the daily rate:
+		-   If under one week (i.e. less than 7 days), then the short 
+			term daily rate is applied.
+		-   Any longer (i.e. 7 days or more), then the long term daily 
+			rate is applied (cheaper than the short term rate)
+		"""
+		if days < 7:
+			r = rates["short_term_rate"]
+		else:
+			r = rates["long_term_rate"]
+
+		"""
+		Add a new row to the car rentals dataset, containing the 
+		following:
+		- The ID of the car being rented.
+		- The customer's number
+		- The daily rate charged
+		- THE number of days the car is being rented for.
+		"""
+		car_rentals.loc[
+			car_id, ["customer_number", "rate", "days"]
+		] = [str(customer_number), float(r), int(days)]
+
+		# Apply these changes to the 'car_rentals' database file.
+		self._store_data(car_rentals, _CAR_RENTALS)
+
+		# Convert the customer's selected car type to upper case if
+		# it is an abbreviated name.
+		if car_type in self._get_abbrev_types(car_types):
+			car_type = car_type.upper()
+
+		# Output a message confirming that the rental was successfully
+		# made.
+		print(
+			f"\nOrder successful! "
+			f"You have rented a {car_type} car for {days} days.\n"
+			f"The car's vehicle registration plate is {car_id}.\n"
+			f"You will be charged £{r:.2f} per day.\n"
+			f"We hope that you enjoy our service.\n")
+
+		# Display the updated stock
+		in_stock = self._output_stock(
+			msg="Updated stock for each car type:", show_prices=False
+		)
+
+		# If there were no cars in stock, give an appropriate message.
+		if not in_stock:
+			print("(There are now no more cars available for rent.)")
+
+		# At this point the rental was successful, so output True to
+		# indicate this.
+		return True
+
+	def issue_bill(self, customer_number, car_number):
+		"""
+		Attempts to process a customer's return request, and if
+		successful, issues a bill.
+		:param customer_number: the numerical ID of the customer
+		making the return.
+		:param car_number: the "numberplate" of the car to be
+		returned.
+		:return: True if the return request is valid, False otherwise.
+		"""
+
+		# Import the 'car_rentals' file.
+		car_rentals = self._get_data(_CAR_RENTALS)
+
+		# Create string representing the message to output if the
+		# return request is invalid.
+		invalid_msg = (
+			f"No car(s) you are renting "
+			f"have that number ({car_number})"
+		)
+
+		# Output the message if no such car number is being rented.
+		if car_number not in car_rentals.index:
+			print(invalid_msg)
+			# Output False to indicate that the request was
+			# unsuccessful.
+			return False
+
+		# Get the rental information of the car being returned.
+		rental = car_rentals.loc[car_number]
+
+		# Output the message if it is a different customer who has/is
+		# renting the car.
+		if rental["customer_number"] != customer_number:
+			print(invalid_msg)
+			# Output False to indicate that the request was
+			# unsuccessful.
+			return False
+
+		"""
+		Processing the return
+		"""
+		# Remove the rental record from the dataset.
+		car_rentals.drop(car_number)
+		# Update the database file accordingly.
+		self._store_data(car_rentals, _CAR_RENTALS)
+
+		# Output message indicating that the return was successful.
+		print("Return successful!")
+
+		"""
+		Issuing the bill
+		"""
+
+		# Import the 'cars' file.
+		cars = self._get_data(_CARS)
+
+		# Get the type of the car being returned
+		c_type = cars.loc[car_number, "car_type"]
+
+		# Get the names of the car types that are abbreviation.
+		abbrev_types = self._get_abbrev_types()
+
+		# If the car type is an abbreviation, convert it to uppercase.
+		if c_type in abbrev_types:
+			c_type = c_type.upper()
+
+		# Get the number of days the car was rented, and the daily rate.
+		period_days = rental['days']
+		rate_per_day = rental['rate']
+		# Calculate the total cost.
+		total = period_days * rate_per_day
+
+		"""
+		Finally output the billing information, showing:
+		- Customer Number, 
+		- Vehicle Registration Number, 
+		- Car Type, 
+		- Period (in days), 
+		- Daily Rate,
+		- Total Payment.
+		"""
+		print("\n====== CAR RENTAL BILL ======")
+		print(
+			f"Customer Number:              {customer_number}\n"
+			f"Vehicle Registration Number:  {car_number}\n"
+			f"Car Type:                     {c_type}\n"
+			f"Period:                       {period_days} days\n"
+			f"------------------------------\n"
+			f"Rate:                         £{rate_per_day:.2f} per day\n"
+			f"Total:                        £{total:.2f}\n"
+			f"==============================\n"
+		)
+
+		# Output True to indicate that the request was successful.
+		return True
+
+	# ====== AUXILIARY METHODS ======
+
+	def __check_db_exists(self, create=True):
+		"""
+		To be called during initialisation to check whether a database
+		for the shop actually exists. If not, and the create parameter
+		is set to True, then a default version is set up.
+
+		:param create: a flag used to determine if a new database
+		should be created if it turns out that one does not already
+		exist. By default, it is True, indicating that a new one will
+		be created.
+
+		:return: True if it does already exist, False otherwise.
+		"""
+
+		# Construct the directory where the shop's database is expected
+		# to be located at.
+		db_dir = f"./{_DATABASE_DIRECTORY}/{self.__shop_id}"
+
+		# If the directory already exists, do nothing more and
+		# output True.
+		if os.path.isdir(db_dir):
+			return True
+		else:
+			# If it does not already exist and the create parameter
+			# is True, then setup new files representing the database.
+			if create:
+				os.makedirs(db_dir, exist_ok=True)
+				# Setup for the 'cars' table
+				_setup_cars(db_dir)
+				# Setup for the 'car_rentals' table
+				_setup_rentals(db_dir)
+				# Setup for the 'car_types' table
+				_setup_car_types(db_dir)
+			return False
+
+	def _get_data(self, name, index_col=0):
+		"""
+		Used to import one of the rental shop's database files.
+
+		:param name: the name of the file to use
+		(either 'cars', 'car_types', or 'car_rentals')
+		:param index_col: the column to use as the index for the
+		imported dataset. By default it is 0 (first column).
+		:return: a DataFrame object representing the imported database
+		file.
+		"""
+		dtypes = None
+
+		if name == _CAR_RENTALS:
+			dtypes = {"customer_number": str}
+
+		# Construct the path to the data file.
+		path = self._get_file_dir(name)
+
+		# Read the data, constructing a DataFrame out of it
+		# (and specifying the column to use as an index) and then
+		# returning it.
+		return pd.read_csv(
+			path,
+			index_col=index_col,
+			dtype=dtypes,
+		)
+
+	def _store_data(self, data, name):
+		"""
+		Overwrites (or newly creates) a given database file with
+		updated data.
+
+		:param data: the updated data to replace the current
+		contents of the database file with.
+		:param name: the name of the database file to overwrite.
+		:return: None
+		"""
+
+		# Send the contents of the updated data the CSV file representing
+		# the database file, overwriting the current contents.
+		data.to_csv(
+			self._get_file_dir(name),
+		)
+
+	def _get_available_cars(self, cars=None, rentals=None):
+		"""
+		Outputs a dataset of all the cars that are currently available
+		for renting.
+
+		:param cars: a DataFrame representing the 'cars' file that may
+		be passed if one exists locally (for caching purposes).
+		Otherwise, it will be imported as normal.
+		:param rentals: a DataFrame representing the 'car_rentals' file
+		that may be passed if one exists locally (for caching purposes).
+		Otherwise, it will be imported as normal.
+
+		:return: a DatFrame consisting of all the listings of cars that
+		as of present are available for renting.
+		"""
+		# Import the 'cars' file and 'car_rentals' files if any were not
+		# passed as arguments.
+		if cars is None:
+			cars = self._get_data(_CARS)
+		if rentals is None:
+			rentals = self._get_data(_CAR_RENTALS)
+
+		# Output only the non-rented cars - these will be considered
+		# the ones that are available to rent.
+		return cars.drop(rentals.index)
+
+	def _get_file_dir(self, name):
+		"""
+		Outputs the path to the given database file's name.
+		:param name: the name of the database file
+		:return: a string containing the relative path to the database
+		file.
+		"""
+
+		"""
+		The format is as follows:
+		
+		./<DB-DIR>/<SHOP-ID>/<name>.csv
+		
+		- DB-DIR: name of the directory for all car shop databases
+		- SHOP-ID: the identifier for the car rental shop
+		- name: the name of the database file (or 'table') to extract.
+		"""
+		return f"./{_DATABASE_DIRECTORY}/{self.__shop_id}/{name}.csv"
+
+	def _get_abbrev_types(self, car_types=None):
+		"""
+		Outputs all the car type names that are abbreviations
+		(i.e. made up of initials of some multi-word name).
+		The purpose of identifying such names is so that when displayed
+		to the user they can be capitalised.
+		(E.g. 'suv' displayed as 'SUV')
+
+		:param car_types: a DataFrame representing the 'car_types' file
+		that may be passed if one exists locally (for caching purposes).
+		:return: a list containing all the car types that are
+		abbreviations.
+		"""
+		# Import the 'car_types' file if it was not passed as an
+		# argument.
+		if car_types is None:
+			car_types = self._get_data(_CAR_TYPES)
+
+		# Ensure the index of the car_types dataset is 'type_name'.
+		if car_types.index.name != 'type_name':
+			car_types = car_types.set_index('type_name', drop=False)
+
+		# Extract the car types that are abbreviations
+		# (i.e the "abbrev" field is True.), outputting result as a
+		# list.
+		return car_types[car_types["abbrev"]].index.to_list()
+
 	def _output_stock(
 			self, msg="The stock of each car type:", show_prices=False
 	):
@@ -155,262 +530,6 @@ class RentalShop(object):
 		# Output if there were any cars available (True) or not (False)
 		return len(available_cars) != 0
 
-	def process_request(self, customer_number, car_type, days):
-		"""
-		Takes in a customer's request to rent a particular kind of car
-		for a certain number of days, and after checking whether it
-		would be possible (i.e. stock availability), it proceeds to
-		process the request and store it in the system's database.
-
-		:param customer_number: the numerical ID of the customer who
-		would like to rent a car.
-		:param car_type: the type of car they would like to rent.
-		:param days: the number of days they would like to rent the car.
-		:return: True if the process was successful. False otherwise.
-		"""
-
-		"""
-		=== 1) VALIDATION OF THE CAR TYPE ===
-		"""
-
-		# Import the 'car_types' file from the database
-		car_types = self._get_data(_CAR_TYPES)
-
-		# If it turns out that the requested car type does not exist as
-		# a record in the 'car_types' file, notify the user and exit
-		# returning False to indicate an unsuccessful process.
-		if car_type not in car_types.index:
-			print(
-				f"\nSorry, but the car type you entered ({car_type})"
-				f"is unknown to the system."
-			)
-			return False
-
-		"""
-		=== 2) CHECKING IF THE CAR TYPE IS IN STOCK ===
-		"""
-
-		# Get the 'car_rentals' file, to obtain all the cars currently
-		# being rented.
-		car_rentals = self._get_data(_CAR_RENTALS)
-		# Get a listing of all the cars available to rent.
-		available_cars = self._get_available_cars(rentals=car_rentals)
-
-		# Form a "selection" of all the cars that are og the given car
-		# type.
-		type_selection = available_cars["car_type"] == car_type
-		# Extract all such cars from the availability listing.
-		cars_of_type = available_cars[type_selection]
-
-		# If it turns out that there are no cars of the requested
-		# car type in stock, notify the user and exit returning False
-		# to indicate an unsuccessful process.
-		if len(cars_of_type) == 0:
-			print(
-				f"\nUnfortunately, no cars of the selected type "
-				f"({car_type}) are in stock."
-			)
-			return False
-
-		"""
-		=== 3) PROCESSING THE CAR RENTAL REQUEST ===
-		"""
-
-		# Get the ID of the first car listed - let it be the one allocated
-		# to the customer.
-		car_id = cars_of_type.index[0]
-
-		# Get the current pricing information of the customer's
-		# desired car type.
-		rates = car_types.loc[car_type]
-
-		"""
-		The number of days the customer wants to rent the car determines 
-		the daily rate:
-		-   If under one week (i.e. less than 7 days), then the short 
-			term daily rate is applied.
-		-   Any longer (i.e. 7 days or more), then the long term daily 
-			rate is applied (cheaper than the short term rate)
-		"""
-		if days < 7:
-			r = rates["short_term_rate"]
-		else:
-			r = rates["long_term_rate"]
-
-		"""
-		Add a new row to the car rentals dataset, containing the 
-		following:
-		- The ID of the car being rented.
-		- The customer's number
-		- The daily rate charged
-		- THE number of days the car is being rented for.
-		"""
-		car_rentals.loc[
-			car_id, ["customer_number", "rate", "days"]
-		] = [customer_number, r, days]
-
-		# Apply these changes to the 'car_rentals' database file.
-		car_rentals.to_csv(self._get_file_dir(_CAR_RENTALS))
-
-		# Convert the customer's selected car type to upper case if
-		# it is an abbreviated name.
-		if car_type in self._get_abbrev_types(car_types):
-			car_type = car_type.upper()
-
-		# Output a message confirming that the rental was successfully
-		# made.
-		print(
-			f"\nOrder successful! "
-			f"You have rented a {car_type} car for {days} days.\n"
-			f"The car's vehicle registration plate is {car_id}.\n"
-			f"You will be charged £{r:.2f} per day.\n"
-			f"We hope that you enjoy our service.\n")
-
-		# Display the updated stock
-		in_stock = self._output_stock(
-			msg="Updated stock for each car type:", show_prices=False
-		)
-
-		# If there were no cars in stock, give an appropriate message.
-		if not in_stock:
-			print("(There are now no more cars available for rent.)")
-
-		# At this point the rental was successful, so output True to
-		# indicate this.
-		return True
-
-	def issue_bill(self, customer_number):
-		pass
-
-	# ====== AUXILIARY METHODS ======
-
-	def __check_db_exists(self, create=True):
-		"""
-		To be called during initialisation to check whether a database
-		for the shop actually exists. If not, and the create parameter
-		is set to True, then a default version is set up.
-
-		:param create: a flag used to determine if a new database
-		should be created if it turns out that one does not already
-		exist. By default, it is True, indicating that a new one will
-		be created.
-
-		:return: True if it does already exist, False otherwise.
-		"""
-
-		# Construct the directory where the shop's database is expected
-		# to be located at.
-		db_dir = f"./{_DATABASE_DIRECTORY}/{self.__shop_id}"
-
-		# If the directory already exists, do nothing more and
-		# output True.
-		if os.path.isdir(db_dir):
-			return True
-		else:
-			# If it does not already exist and the create parameter
-			# is True, then setup new files representing the database.
-			if create:
-				os.makedirs(db_dir, exist_ok=True)
-				# Setup for the 'cars' table
-				_setup_cars(db_dir)
-				# Setup for the 'car_rentals' table
-				_setup_rentals(db_dir)
-				# Setup for the 'car_types' table
-				_setup_car_types(db_dir)
-			return False
-
-	def _get_data(self, name, index_col=0):
-		"""
-		Used to import one of the rental shop's database files.
-
-		:param name: the name of the file to use
-		(either 'cars', 'car_types', or 'car_rentals')
-		:param index_col: the column to use as the index for the
-		imported dataset. By default it is 0 (first column).
-		:return: a DataFrame object representing the imported database
-		file.
-		"""
-
-		# Construct the path to the data file.
-		path = self._get_file_dir(name)
-
-		# Read the data, constructing a DataFrame out of it
-		# (and specifying the column to use as an index) and then
-		# returning it.
-		return pd.read_csv(path, index_col=index_col)
-
-	def _get_available_cars(self, cars=None, rentals=None):
-		"""
-		Outputs a dataset of all the cars that are currently available
-		for renting.
-
-		:param cars: a DataFrame representing the 'cars' file that may
-		be passed if one exists locally (for caching purposes).
-		Otherwise, it will be imported as normal.
-		:param rentals: a DataFrame representing the 'car_rentals' file
-		that may be passed if one exists locally (for caching purposes).
-		Otherwise, it will be imported as normal.
-
-		:return: a DatFrame consisting of all the listings of cars that
-		as of present are available for renting.
-		"""
-		# Import the 'cars' file and 'car_rentals' files if any were not
-		# passed as arguments.
-		if cars is None:
-			cars = self._get_data(_CARS)
-		if rentals is None:
-			rentals = self._get_data(_CAR_RENTALS)
-
-		# Output only the non-rented cars - these will be considered
-		# the ones that are available to rent.
-		return cars.drop(rentals.index)
-
-	def _get_file_dir(self, name):
-		"""
-		Outputs the path to the given database file's name.
-		:param name: the name of the database file
-		:return: a string containing the relative path to the database
-		file.
-		"""
-
-		"""
-		The format is as follows:
-		
-		./<DB-DIR>/<SHOP-ID>/<name>.csv
-		
-		- DB-DIR: name of the directory for all car shop databases
-		- SHOP-ID: the identifier for the car rental shop
-		- name: the name of the database file (or 'table') to extract.
-		"""
-		return f"./{_DATABASE_DIRECTORY}/{self.__shop_id}/{name}.csv"
-
-	def _get_abbrev_types(self, car_types=None):
-		"""
-		Outputs all the car type names that are abbreviations
-		(i.e. made up of initials of some multi-word name).
-		The purpose of identifying such names is so that when displayed
-		to the user they can be capitalised.
-		(E.g. 'suv' displayed as 'SUV')
-
-		:param car_types: a DataFrame representing the 'car_types' file
-		that may be passed if one exists locally (for caching purposes).
-		:return: a list containing all the car types that are
-		abbreviations.
-		"""
-		# Import the 'car_types' file if it was not passed as an
-		# argument.
-		if car_types is None:
-			car_types = self._get_data(_CAR_TYPES)
-
-		# Ensure the index of the car_types dataset is 'type_name'.
-		if car_types.index.name != 'type_name':
-			car_types = car_types.set_index('type_name', drop=False)
-
-		# Extract the car types that are abbreviations
-		# (i.e the "abbrev" field is True.), outputting result as a
-		# list.
-		return car_types[car_types["abbrev"]].index.to_list()
-
 
 # ========== DATABASE SETUP FUNCTIONS ==========
 
@@ -502,11 +621,24 @@ def _setup_rentals(file_dir):
 
 	# Create a DataFrame out of the above dictionary representing the
 	# car rentals dataset.
-	rentals = pd.DataFrame(data).set_index("car_id")
+	rentals = pd.DataFrame(data)
+
+	# Ensure that each column has the right type.
+	rentals = rentals.astype({
+		'car_id': "object",
+		'customer_number': "object",
+		'rate': float,
+		'days': int
+	})
+
+	# Use the "car_id" field as the index.
+	rentals = rentals.set_index("car_id")
 
 	# Create a CSV file out of the DataFrame. The name of the file will
 	# be "car_rentals.csv"
-	rentals.to_csv(f"{file_dir}/{_CAR_RENTALS}.csv")
+	rentals.to_csv(
+		f"{file_dir}/{_CAR_RENTALS}.csv",
+	)
 
 
 def _setup_car_types(file_dir):
@@ -558,7 +690,9 @@ def _setup_car_types(file_dir):
 
 	# Create a CSV file out of the DataFrame. The name of the file will
 	# be "car_types.csv"
-	car_types.to_csv(f"{file_dir}/{_CAR_TYPES}.csv")
+	car_types.to_csv(
+		f"{file_dir}/{_CAR_TYPES}.csv",
+	)
 
 
 # ========== AUXILIARY FUNCTIONS ==========

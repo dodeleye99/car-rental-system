@@ -105,12 +105,24 @@ def rent_car(customer: Customer, car_shop: RentalShop):
 			customer.rent_car(car_type, days, car_shop)
 
 
-def return_car():
+def return_car(customer: Customer, car_shop: RentalShop):
 	"""
 	Used to allow the user to return a car.
+
+	:param customer: the customer returning a car they have rented
+	:param car_shop: the rental shop the customer is returning the car to.
+	:return: None
 	"""
-	print("RETURNING A CAR:")
-	print("Sorry, this service is currently unavailable.")
+
+	print("\nRETURNING A CAR:\n")
+
+	# Have the user enter the "number plate" of the car they are returning.
+	car_number = input(
+		"Enter the vehicle registration number of the car you would like"
+		"to return:\n")
+
+	# Have the customer return the car to the rental shop.
+	customer.return_car(car_number, car_shop)
 
 
 def main():
@@ -155,7 +167,7 @@ def main():
 
 		# Return : customer returns a car they borrowed
 		elif user_option in ("3", "return"):
-			return_car()
+			return_car(customer, rental_shop)
 
 		# Exit : user wants to end the program
 		elif user_option in ("4", "exit"):

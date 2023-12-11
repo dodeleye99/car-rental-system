@@ -53,12 +53,17 @@ class Customer(object):
             self.__customer_number, car_type, days
         )
 
-    def return_car(self, rental_shop: RentalShop):
+    def return_car(self, car_number, rental_shop: RentalShop):
         """
         Used to allow a customer to return a car that they have
         previously rented from a rental shop
+
+        :param car_number: the identifier for the car being returned.
         :param rental_shop: a RentalShop object representing the car
         rental shop they are returning a car to.
         :return: None
         """
-        rental_shop.issue_bill(self.__customer_number)
+
+        # Call the rental shop to return the car being rented (if valid)
+        # and issue a bill.
+        rental_shop.issue_bill(self.__customer_number, car_number)
