@@ -19,13 +19,16 @@ class RentalShop(object):
 
 		self.__shop_id = shop_id
 		"""
-		Represents a connection to the rental shop's database, used to 
-		make queries on it as well as update it.
+		Represents a unique string identifier for the rental shop.
 		"""
 
 		# "Connect" to the database
 		# (setting it up if it does not yet exist)
 		self.__shop_db = ShopDatabase(shop_id)
+		"""
+		Represents a connection to the rental shop's database, used to 
+		make queries on it as well as update it.
+		"""
 
 	# === INTERFACE METHODS ===
 

@@ -16,24 +16,103 @@ _CARS = "cars"
 _CAR_RENTALS = "car_rentals"
 _CAR_TYPES = "car_types"
 
+# The data types of each column in the database files.
+DATA_TYPES = {
+	_CARS: {
+		"car_id": str,
+		"car_type": str,
+	},
+
+	_CAR_RENTALS: {
+		"car_id": str,
+		"customer_number": str,
+		"rate": float,
+		"days": int,
+	},
+
+	_CAR_TYPES: {
+		"type_name": str,
+		"abbrev": bool,
+		"short_term_rate": float,
+		"long_term_rate": float,
+		"vip_rate": float
+	},
+}
+
+
+# === DATABASE MANAGEMENT CLASS ===
 
 class ShopDatabase(object):
+	"""
+	This class is used to represent a rental shop's database,
+	consisting of all the cars that exist in the shop, all the
+	possible car types and their pricing information, and all
+	the current rentals being made.
+
+	It provides a simple interface for accessing and updating
+	its data files.
+	"""
 
 	def __init__(self, shop_id):
+		"""
+		Used to initialise a new ShopDatabase instance.
+
+		:param shop_id: the unique string identifier of the shop that
+		possesses the database, acting as an ID for the database itself.
+		"""
 
 		self.__shop_id = shop_id
+		"""
+		A unique string identifier for the database's rental shop 
+		(and the database itself), that allows it to be located.
+		"""
 
-		self.__check_db_exists()
+		self.__db_dir = f"./{_DATABASE_DIRECTORY}/{self.__shop_id}"
+		"""
+		The relative path to the directory of the database files.
+		
+		The format is as follows:
+
+		./<DB-DIR>/<SHOP-ID>/
+
+		- DB-DIR: name of the directory for all car shop databases
+		- SHOP-ID: the identifier for the car rental shop
+		"""
+
+		# Set up the database if it does not yet exist.
+		self.__check_db_exists(create=True)
 
 	# === INTERFACE METHODS ===
 
 	def get_cars(self):
+		"""
+		Outputs the data file containing the listing of all the cars
+		possessed by the database's rental shop.
+
+		:return: a pandas.DataFrame object representing the 'cars.csv'
+		flat file.
+		"""
 		return self._get_data(_CARS)
 
 	def get_car_rentals(self):
+		"""
+		Outputs the data file containing the listing of all the current
+		car rentals being made over the database's rental shop.
+
+		:return: a pandas.DataFrame object representing the
+		'car_rentals.csv' flat file.
+		"""
 		return self._get_data(_CAR_RENTALS)
 
 	def get_car_types(self):
+		"""
+		Outputs the data file containing all the different car types
+		that the database's rental shop provides, along with their
+		pricing information.
+
+		:return: a pandas.DataFrame object representing the
+		'car_types.csv' flat file.
+		"""
 		return self._get_data(_CAR_TYPES)
 
 	def get_available_cars(self, cars=None, rentals=None):
@@ -48,8 +127,8 @@ class ShopDatabase(object):
 		that may be passed if one exists locally (for caching purposes).
 		Otherwise, it will be imported as normal.
 
-		:return: a DatFrame consisting of all the listings of cars that
-		as of present are available for renting.
+		:return: a pandas.DataFrame consisting of all the listings of
+		cars that as of present are available for renting.
 		"""
 		# Import the 'cars' file and 'car_rentals' files if any were not
 		# passed as arguments.
@@ -63,9 +142,16 @@ class ShopDatabase(object):
 		return cars.drop(rentals.index)
 
 	def update_rentals(self, data):
+		"""
+		Replaces the contents of the 'car_rentals' file with an updated
+		dataset.
+		:param data: a pandas.DataFrame object holding the updated car
+		rentals data.
+		:return: None
+		"""
 		self._store_data(data, _CAR_RENTALS)
 
-	# === INTERNAL METHODS ===
+	# ======== INTERNAL METHODS ========
 	def __check_db_exists(self, create=True):
 		"""
 		To be called during initialisation to check whether a database
@@ -80,25 +166,21 @@ class ShopDatabase(object):
 		:return: True if it does already exist, False otherwise.
 		"""
 
-		# Construct the directory where the shop's database is expected
-		# to be located at.
-		db_dir = f"./{_DATABASE_DIRECTORY}/{self.__shop_id}"
-
 		# If the directory already exists, do nothing more and
 		# output True.
-		if os.path.isdir(db_dir):
+		if os.path.isdir(self.__db_dir):
 			return True
 		else:
 			# If it does not already exist and the create parameter
 			# is True, then setup new files representing the database.
 			if create:
-				os.makedirs(db_dir, exist_ok=True)
+				os.makedirs(self.__db_dir, exist_ok=True)
 				# Setup for the 'cars' table
-				_setup_cars(db_dir)
+				self._setup_cars()
 				# Setup for the 'car_rentals' table
-				_setup_rentals(db_dir)
+				self._setup_rentals()
 				# Setup for the 'car_types' table
-				_setup_car_types(db_dir)
+				self._setup_car_types()
 			return False
 
 	def _get_data(self, name, index_col=0):
@@ -108,14 +190,10 @@ class ShopDatabase(object):
 		:param name: the name of the file to use
 		(either 'cars', 'car_types', or 'car_rentals')
 		:param index_col: the column to use as the index for the
-		imported dataset. By default it is 0 (first column).
+		imported dataset. By default, it is 0 (first column).
 		:return: a DataFrame object representing the imported database
 		file.
 		"""
-		dtypes = None
-
-		if name == _CAR_RENTALS:
-			dtypes = {"customer_number": str}
 
 		# Construct the path to the data file.
 		path = self._get_file_dir(name)
@@ -126,7 +204,7 @@ class ShopDatabase(object):
 		return pd.read_csv(
 			path,
 			index_col=index_col,
-			dtype=dtypes,
+			dtype=DATA_TYPES[name],  # To ensure data types are correct
 		)
 
 	def _store_data(self, data, name):
@@ -157,177 +235,165 @@ class ShopDatabase(object):
 		"""
 		The format is as follows:
 
-		./<DB-DIR>/<SHOP-ID>/<name>.csv
+		/<SHOP-DB-DIR>/<name>.csv
 
-		- DB-DIR: name of the directory for all car shop databases
-		- SHOP-ID: the identifier for the car rental shop
+		- SHOP-DB-DIR: the directory containing the shop's database 
+		files.
 		- name: the name of the database file (or 'table') to extract.
 		"""
-		return f"./{_DATABASE_DIRECTORY}/{self.__shop_id}/{name}.csv"
+		return self.__db_dir + f"/{name}.csv"
 
+	# ========== DATABASE SETUP METHODS ==========
 
-# ========== DATABASE SETUP FUNCTIONS ==========
+	def _setup_cars(self):
+		"""
+		Sets up a default file to store all the cars that exist in the
+		rental shop.
 
-def _setup_cars(file_dir):
-	"""
-	Sets up a default file to store all the cars that exist in the
-	rental shop.
+		:return: None
+		"""
 
-	:param file_dir: the directory to store the file.
-	:return: None
-	"""
+		"""
+		Format of the file:
+	
+		car_id (ID):    an identifier for a car. Will have a format similar 
+						to a numberplate.
+	
+		car_type:       the type of the car. 
+						Can either be a hatchback, sedan, or suv.
+	
+		Example:
+		-----------------
+		car_id  car_type
+		-----------------
+		HN56XNF hatchback
+		BA72LTQ     sedan
+		EC21NKS     sedan
+		LU71YPQ       suv
+		...
+		"""
 
-	"""
-	Format of the file:
+		# Initial data will consist of 10 cars
+		# (4 hatchbacks, 3 sedans, 3 SUVs),
+		# with random IDs will be assigned to each.
+		data = {
+			"car_id": _random_car_ids(10),
+			"car_type": [
+				'hatchback', 'sedan', 'sedan', 'suv', 'suv',
+				'hatchback', 'hatchback', 'hatchback', 'sedan', 'suv'
+			],
+		}
 
-	car_id (ID):    an identifier for a car. Will have a format similar 
-					to a numberplate.
+		# Create a DataFrame out of the above dictionary representing
+		# the car dataset.
+		cars = pd.DataFrame(data).set_index("car_id")
 
-	car_type:       the type of the car. 
-					Can either be a hatchback, sedan, or suv.
+		# Create a new flat file (CSV) out of the DataFrame.
+		self._store_data(cars, _CARS)
 
-	Example:
-	-----------------
-	car_id  car_type
-	-----------------
-	HN56XNF hatchback
-	BA72LTQ     sedan
-	EC21NKS     sedan
-	LU71YPQ       suv
-	...
-	"""
+	def _setup_rentals(self):
+		"""
+		Sets up a default file to store all the current car rentals.
+		
+		:return: None
+		"""
 
-	# Initial data will consist of 10 cars
-	# (4 hatchbacks, 3 sedans, 3 SUVs),
-	# with random IDs will be assigned to each.
-	data = {
-		"car_id": _random_car_ids(10),
-		"car_type": [
-			'hatchback', 'sedan', 'sedan', 'suv', 'suv',
-			'hatchback', 'hatchback', 'hatchback', 'sedan', 'suv'
-		],
-	}
+		"""
+		Format of the file:
+	
+		car_id (ID):        an identifier for the car being rented. 
+							Will have a format similar to a numberplate.
+	
+		customer_number:    an identifier for the customer who rented 
+							the car.
+	
+		rate:               the daily rate (in pounds) for the car being 
+							rented.
+	
+		days:               the number of days the car is rented for.
+	
+		Example:
+		---------------------------------
+		car_id  customer_number rate days
+		---------------------------------
+		EW23FBN          018974   40    8
+		HN56XNF          052581   30    5
+		...
+		"""
 
-	# Create a DataFrame out of the above dictionary representing
-	# the car dataset.
-	cars = pd.DataFrame(data).set_index("car_id")
+		data = {
+			"car_id": [],
+			"customer_number": [],
+			"rate": [],
+			"days": []
+		}
 
-	# Create a CSV file out of the DataFrame.
-	# The name of the file will be "cars.csv"
-	cars.to_csv(f"{file_dir}/{_CARS}.csv")
+		# Create a DataFrame out of the above dictionary representing the
+		# car rentals dataset.
+		rentals = pd.DataFrame(data)
 
+		# Ensure that each column has the right type.
+		rentals = rentals.astype({
+			'car_id': "object",
+			'customer_number': "object",
+			'rate': float,
+			'days': int
+		})
 
-def _setup_rentals(file_dir):
-	"""
-	Sets up a default file to store all the current car rentals.
-	:param file_dir: the directory to store the file.
-	:return: None
-	"""
+		# Use the "car_id" field as the index.
+		rentals = rentals.set_index("car_id")
 
-	"""
-	Format of the file:
+		# Create a new flat file (CSV) out of the DataFrame.
+		self._store_data(rentals, _CAR_RENTALS)
 
-	car_id (ID):        an identifier for the car being rented. 
-						Will have a format similar to a numberplate.
+	def _setup_car_types(self):
+		"""
+		Sets up a default file to store the pricing of each of the different
+		car types in the rental shop.
 
-	customer_number:    an identifier for the customer who rented 
-						the car.
+		:return: None
+		"""
 
-	rate:               the daily rate (in pounds) for the car being 
-						rented.
+		"""
+		Format of the file:
+	
+		type_name (ID):     the name of the car type
+	
+		abbrev:             used to indicate whether the name is an 
+							abbreviation of the real name.
+	
+		short_term_rate:    the daily rate charged for renting the car for 
+							less than a week
+	
+		long_term_rate:     the daily rate charged for renting the car for 
+							one week or more.
+	
+		vip_rate:           the daily rate charged for VIP customers.
+	
+	
+		The expected dataset:
+		--------------------------------------------------------------------
+		type_name   abbrev       short_term_rate   long_term_rate   vip_rate
+		--------------------------------------------------------------------
+		hatchback   False         0.0              50.0             100.0
+		sedan       False        25.0              40.0              90.0
+		suv         True         20.0              35.0              80.0
+		"""
 
-	days:               the number of days the car is rented for.
+		data = {
+			"type_name": ["hatchback", "sedan", "suv"],
+			"abbrev": [False, False, True],
+			"short_term_rate": [30.0, 50.0, 100.0],
+			"long_term_rate": [25.0, 40.0, 90.0],
+			"vip_rate": [20.0, 35.0, 80.0]
+		}
 
-	Example:
-	---------------------------------
-	car_id  customer_number rate days
-	---------------------------------
-	EW23FBN          018974   40    8
-	HN56XNF          052581   30    5
-	...
-	"""
+		# Create a DataFrame out of the above dictionary representing the
+		# car types dataset.
+		car_types = pd.DataFrame(data).set_index("type_name")
 
-	data = {
-		"car_id": [],
-		"customer_number": [],
-		"rate": [],
-		"days": []
-	}
-
-	# Create a DataFrame out of the above dictionary representing the
-	# car rentals dataset.
-	rentals = pd.DataFrame(data)
-
-	# Ensure that each column has the right type.
-	rentals = rentals.astype({
-		'car_id': "object",
-		'customer_number': "object",
-		'rate': float,
-		'days': int
-	})
-
-	# Use the "car_id" field as the index.
-	rentals = rentals.set_index("car_id")
-
-	# Create a CSV file out of the DataFrame. The name of the file will
-	# be "car_rentals.csv"
-	rentals.to_csv(
-		f"{file_dir}/{_CAR_RENTALS}.csv",
-	)
-
-
-def _setup_car_types(file_dir):
-	"""
-	Sets up a default file to store the pricing of each of the different
-	car types in the rental shop.
-
-	:param file_dir: the directory to store the file.
-	:return: None
-	"""
-
-	"""
-	Format of the file:
-
-	type_name (ID):     the name of the car type
-
-	abbrev:             used to indicate whether the name is an 
-						abbreviation of the real name.
-
-	short_term_rate:    the daily rate charged for renting the car for 
-						less than a week
-
-	long_term_rate:     the daily rate charged for renting the car for 
-						one week or more.
-
-	vip_rate:           the daily rate charged for VIP customers.
-
-
-	The expected dataset:
-	--------------------------------------------------------------------
-	type_name   abbrev       short_term_rate   long_term_rate   vip_rate
-	--------------------------------------------------------------------
-	hatchback   False         0.0              50.0             100.0
-	sedan       False        25.0              40.0              90.0
-	suv         True         20.0              35.0              80.0
-	"""
-
-	data = {
-		"type_name": ["hatchback", "sedan", "suv"],
-		"abbrev": [False, False, True],
-		"short_term_rate": [30.0, 50.0, 100.0],
-		"long_term_rate": [25.0, 40.0, 90.0],
-		"vip_rate": [20.0, 35.0, 80.0]
-	}
-
-	# Create a DataFrame out of the above dictionary representing the
-	# car types dataset.
-	car_types = pd.DataFrame(data).set_index("type_name")
-
-	# Create a CSV file out of the DataFrame. The name of the file will
-	# be "car_types.csv"
-	car_types.to_csv(
-		f"{file_dir}/{_CAR_TYPES}.csv",
-	)
+		# Create a new flat file (CSV) out of the DataFrame.
+		self._store_data(car_types, _CAR_TYPES)
 
 
 # ========== AUXILIARY FUNCTIONS ==========
