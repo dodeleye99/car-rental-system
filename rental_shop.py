@@ -1,7 +1,7 @@
 from shop_db import ShopDatabase
 
 
-class RentalShop(object):
+class RentalShop:
 	"""
 	This class is used to represent a car rental shop, allowing
 	customers to request for stock, hire a car to rent, and make
@@ -17,14 +17,14 @@ class RentalShop(object):
 		for managing its stock and rentals.
 		"""
 
-		self.__shop_id = shop_id
+		self._shop_id = shop_id
 		"""
 		Represents a unique string identifier for the rental shop.
 		"""
 
 		# "Connect" to the database
 		# (setting it up if it does not yet exist)
-		self.__shop_db = ShopDatabase(shop_id)
+		self._shop_db = ShopDatabase(shop_id)
 		"""
 		Represents a connection to the rental shop's database, used to 
 		make queries on it as well as update it.
@@ -55,7 +55,9 @@ class RentalShop(object):
 		# were any cars in stock.
 		return in_stock
 
-	def process_request(self, customer_number, car_type, days):
+	def process_request(
+			self, customer_number, car_type, days, loyalty_number=None
+	):
 		"""
 		Takes in a customer's request to rent a particular kind of car
 		for a certain number of days, and after checking whether it
@@ -65,7 +67,11 @@ class RentalShop(object):
 		:param customer_number: the numerical ID of the customer who
 		would like to rent a car.
 		:param car_type: the type of car they would like to rent.
-		:param days: the number of days they would like to rent the car.
+		:param days: the number of days they would like to rent the
+		car.
+		:param loyalty_number: the identification number of the
+		customer's loyalty card (if they possess one; if not it
+		defaults to None).
 		:return: True if the process was successful. False otherwise.
 		"""
 
@@ -74,7 +80,7 @@ class RentalShop(object):
 		"""
 
 		# Import the 'car_types' file from the database
-		car_types = self.__shop_db.get_car_types()
+		car_types = self._shop_db.get_car_types()
 
 		# If it turns out that the requested car type does not exist as
 		# a record in the 'car_types' file, notify the user and exit
@@ -92,9 +98,9 @@ class RentalShop(object):
 
 		# Get the 'car_rentals' file, to obtain all the cars currently
 		# being rented.
-		car_rentals = self.__shop_db.get_car_rentals()
+		car_rentals = self._shop_db.get_car_rentals()
 		# Get a listing of all the cars available to rent.
-		available_cars = self.__shop_db.get_available_cars(
+		available_cars = self._shop_db.get_available_cars(
 			rentals=car_rentals
 		)
 
@@ -133,8 +139,18 @@ class RentalShop(object):
 			term daily rate is applied.
 		-   Any longer (i.e. 7 days or more), then the long term daily 
 			rate is applied (cheaper than the short term rate)
+			
+		But if the customer is using a loyalty card, they automatically
+		get the VIP discount regardless of the number of days they are
+		renting the car for.
 		"""
-		if days < 7:
+		if loyalty_number is not None:
+			print(
+				"\n(Loyalty card detected! "
+				"You get access to a special discount!)"
+			)
+			r = rates["vip_rate"]
+		elif days < 7:
 			r = rates["short_term_rate"]
 		else:
 			r = rates["long_term_rate"]
@@ -152,7 +168,7 @@ class RentalShop(object):
 		] = [str(customer_number), float(r), int(days)]
 
 		# Apply these changes to the 'car_rentals' database file.
-		self.__shop_db.update_rentals(car_rentals)
+		self._shop_db.update_rentals(car_rentals)
 
 		# Convert the customer's selected car type to upper case if
 		# it is an abbreviated name.
@@ -193,7 +209,7 @@ class RentalShop(object):
 		"""
 
 		# Import the 'car_rentals' file.
-		car_rentals = self.__shop_db.get_car_rentals()
+		car_rentals = self._shop_db.get_car_rentals()
 
 		# Create string representing the message to output if the
 		# return request is invalid.
@@ -226,7 +242,7 @@ class RentalShop(object):
 		# Remove the rental record from the dataset.
 		car_rentals.drop(car_number)
 		# Update the database file accordingly.
-		self.__shop_db.update_rentals(car_rentals)
+		self._shop_db.update_rentals(car_rentals)
 
 		# Output message indicating that the return was successful.
 		print("Return successful!")
@@ -235,7 +251,7 @@ class RentalShop(object):
 		Issuing the bill
 		"""
 		# Import the 'cars' file.
-		cars = self.__shop_db.get_cars()
+		cars = self._shop_db.get_cars()
 
 		# Get the type of the car being returned
 		c_type = cars.loc[car_number, "car_type"]
@@ -293,14 +309,14 @@ class RentalShop(object):
 		"""
 
 		# Import the 'car_types' file from the database
-		car_types = self.__shop_db.get_car_types()
+		car_types = self._shop_db.get_car_types()
 
 		"""
 		1) Obtaining a list of stocks for each car type
 		"""
 		# Get a dataset of all the cars that are currently available for
 		# renting.
-		available_cars = self.__shop_db.get_available_cars()
+		available_cars = self._shop_db.get_available_cars()
 
 		# Create a new Series showing the number of available cars
 		# of EACH car_type.
@@ -398,7 +414,7 @@ class RentalShop(object):
 		# Import the 'car_types' file if it was not passed as an
 		# argument.
 		if car_types is None:
-			car_types = self.__shop_db.get_car_types()
+			car_types = self._shop_db.get_car_types()
 
 		# Ensure the index of the car_types dataset is 'type_name'.
 		if car_types.index.name != 'type_name':

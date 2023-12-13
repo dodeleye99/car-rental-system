@@ -42,7 +42,7 @@ DATA_TYPES = {
 
 # === DATABASE MANAGEMENT CLASS ===
 
-class ShopDatabase(object):
+class ShopDatabase:
 	"""
 	This class is used to represent a rental shop's database,
 	consisting of all the cars that exist in the shop, all the
@@ -61,13 +61,13 @@ class ShopDatabase(object):
 		possesses the database, acting as an ID for the database itself.
 		"""
 
-		self.__shop_id = shop_id
+		self._shop_id = shop_id
 		"""
 		A unique string identifier for the database's rental shop 
 		(and the database itself), that allows it to be located.
 		"""
 
-		self.__db_dir = f"./{_DATABASE_DIRECTORY}/{self.__shop_id}"
+		self._db_dir = f"./{_DATABASE_DIRECTORY}/{self._shop_id}"
 		"""
 		The relative path to the directory of the database files.
 		
@@ -168,13 +168,13 @@ class ShopDatabase(object):
 
 		# If the directory already exists, do nothing more and
 		# output True.
-		if os.path.isdir(self.__db_dir):
+		if os.path.isdir(self._db_dir):
 			return True
 		else:
 			# If it does not already exist and the create parameter
 			# is True, then setup new files representing the database.
 			if create:
-				os.makedirs(self.__db_dir, exist_ok=True)
+				os.makedirs(self._db_dir, exist_ok=True)
 				# Setup for the 'cars' table
 				self._setup_cars()
 				# Setup for the 'car_rentals' table
@@ -241,7 +241,7 @@ class ShopDatabase(object):
 		files.
 		- name: the name of the database file (or 'table') to extract.
 		"""
-		return self.__db_dir + f"/{name}.csv"
+		return self._db_dir + f"/{name}.csv"
 
 	# ========== DATABASE SETUP METHODS ==========
 
