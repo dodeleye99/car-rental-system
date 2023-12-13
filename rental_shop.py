@@ -43,7 +43,7 @@ class RentalShop:
 		# Output the stock of each car types and the rates charged for
 		# them, and obtaining whether there were any available at all.
 		in_stock = self._output_stock(
-			msg="The stock of each car type and pricing information",
+			msg="The stock of each car type and pricing information:",
 			show_prices=True
 		)
 
@@ -215,7 +215,7 @@ class RentalShop:
 		# return request is invalid.
 		invalid_msg = (
 			f"No car(s) you are renting "
-			f"have that number ({car_number})"
+			f"have that number ({car_number})."
 		)
 
 		# Output the message if no such car number is being rented.

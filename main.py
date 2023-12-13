@@ -2,6 +2,8 @@ from customer import Customer, VIPCustomer
 from rental_shop import RentalShop
 
 
+# ============ COMPONENT FUNCTIONS OF THE PROGRAM ============
+
 def init_objects():
 	"""
 	Used to initialise customer and rental shop objects.
@@ -70,7 +72,7 @@ def init_objects():
 		# Prompt the user for their loyalty card number. If they lack
 		# one, allow them to proceed by pressing just enter.
 		loyalty_number = input(
-			"\nDo you have a valid loyalty card?"
+			"\nDo you have a valid loyalty card? "
 			"If so enter its 10-digit number.\n"
 			"Otherwise simply press ENTER to continue.\n"
 		).strip()  # Strip leading and trailing whitespace.
@@ -98,7 +100,7 @@ def init_objects():
 	# Otherwise (i.e. they do not have a loyalty card), accept them as
 	# a normal customer.
 	else:
-		print("(Preceding as regular customer)")
+		print("(Preceding as regular customer.)")
 		# Instantiate a Customer object with the inputted customer number.
 		customer = Customer(customer_number)
 
@@ -116,7 +118,7 @@ def inquire(customer: Customer, car_shop: RentalShop):
 	:return: None
 	"""
 
-	print("\nINQUIRING FROM CAR RENTAL SHOP:\n")
+	print_menu_text("INQUIRING FROM CAR RENTAL SHOP")
 
 	# Have the customer ask the rental shop for the stock and prices.
 	customer.inquire(car_shop)
@@ -131,7 +133,7 @@ def rent_car(customer: Customer, car_shop: RentalShop):
 	:return: None
 	"""
 
-	print("\nRENTING A CAR:\n")
+	print_menu_text("RENTING A CAR")
 
 	# === Prompt user for the type of car to rent and number of days ===
 
@@ -165,16 +167,18 @@ def return_car(customer: Customer, car_shop: RentalShop):
 	:return: None
 	"""
 
-	print("\nRETURNING A CAR:\n")
+	print_menu_text("RETURNING A CAR")
 
 	# Have the user enter the "number plate" of the car they are returning.
 	car_number = input(
-		"Enter the vehicle registration number of the car you would like"
+		"Enter the vehicle registration number of the car you would like "
 		"to return:\n")
 
 	# Have the customer return the car to the rental shop.
 	customer.return_car(car_number, car_shop)
 
+
+# ============ THE MAIN FUNCTION ============
 
 def main():
 	"""
@@ -182,7 +186,12 @@ def main():
 	this script is executed.
 	"""
 
-	print("Hello! Welcome to the Car Rental System\n")
+	# Output an initial ribbon as a separator from whatever came
+	# before it.
+	print("=" * 80)
+
+	# Output "welcome" text.
+	print("Hello! Welcome to the Car Rental System.\n")
 
 	# Create a flag do determine whether the main loop should still
 	# be running
@@ -194,13 +203,15 @@ def main():
 	# The main loop
 	while running:
 
+		print_menu_text("MAIN MENU")
+
 		# Prompt user for what they want to do
 		print(
-			"\nWhat would you like to do?\n"
-			"1 INQUIRE for car stock and prices\n"
-			"2 RENT a particular type of car for a number of days\n"
-			"3 RETURN a rented car\n"
-			"4 EXIT the program"
+			"What would you like to do?\n"
+			"1 INQUIRE for car stock and prices.\n"
+			"2 RENT a particular type of car for a number of days.\n"
+			"3 RETURN a rented car.\n"
+			"4 EXIT the program."
 		)
 		# Get the user's input (converting it to lowercase.)
 		user_option = input(
@@ -236,6 +247,47 @@ def main():
 	# Say goodbye to user as a way to mark the (official) end of the
 	# program.
 	print("Goodbye!")
+
+	# Output a final ribbon as a separator from whatever will come
+	# after it.
+	print("=" * 80)
+
+
+# ============ "HELPER" FUNCTIONS ============
+
+def print_menu_text(label, nchar=80, nl_1=True, nl_2=True):
+	"""
+	A "helper" function for outputting menu text, represented as a
+	horizontal "ribbon" containing an appropriate heading when a user is
+	brought to one of the services of the system
+	(i.e. inquiring, renting, returning).
+
+	:param label: the text to display for the heading
+	:param nchar: the total number of characters to use for the "ribbon"
+	:param nl_1: a flag determining whether to print a new line BEFORE
+	outputting the "ribbon" (True by default)
+	:param nl_2: a flag determining whether to print a new line AFTER
+	outputting the "ribbon" (True by default)
+
+	:return: None
+	"""
+
+	# 1) Begin to construct the string: surround it with single
+	# whitespace
+	s = " " + label + " "
+
+	# 2) Surround the text with the "=" character to make its
+	# appearance similar to a "ribbon".
+	s = s.center(nchar, "=")
+
+	# 3) Add a leading/ending new line according to the flags.
+	if nl_1:
+		s = "\n" + s
+	if nl_2:
+		s = s + "\n"
+
+	# 4) Output this constructed string.
+	print(s)
 
 
 if __name__ == "__main__":
