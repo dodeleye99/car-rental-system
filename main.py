@@ -85,7 +85,7 @@ def init_objects():
 
 		# If their input for the card number is valid (10-digits),
 		# accept the input by setting the flag to True
-		if customer_number.isdigit() and len(customer_number) != 10:
+		if customer_number.isdigit() and len(customer_number) == 10:
 			validated = True
 		# Otherwise notify user that their input is invalid.
 		else:

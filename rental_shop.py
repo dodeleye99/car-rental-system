@@ -240,7 +240,7 @@ class RentalShop:
 		Processing the return
 		"""
 		# Remove the rental record from the dataset.
-		car_rentals.drop(car_number)
+		car_rentals = car_rentals.drop(car_number)
 		# Update the database file accordingly.
 		self._shop_db.update_rentals(car_rentals)
 
