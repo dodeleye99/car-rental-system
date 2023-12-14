@@ -92,6 +92,12 @@ class RentalShop:
 			)
 			return False
 
+		# Create variable for the name of the customer's selected car type,
+		# converted to upper case if it is an abbreviated name.
+		type_name = car_type
+		if car_type in self._get_abbrev_types(car_types):
+			type_name = car_type.upper()
+
 		"""
 		=== 2) CHECKING IF THE CAR TYPE IS IN STOCK ===
 		"""
@@ -114,9 +120,10 @@ class RentalShop:
 		# car type in stock, notify the user and exit returning False
 		# to indicate an unsuccessful process.
 		if len(cars_of_type) == 0:
+
 			print(
 				f"\nUnfortunately, no cars of the selected type "
-				f"({car_type}) are in stock."
+				f"({type_name}) are in stock."
 			)
 			return False
 
@@ -170,16 +177,18 @@ class RentalShop:
 		# Apply these changes to the 'car_rentals' database file.
 		self._shop_db.update_rentals(car_rentals)
 
-		# Convert the customer's selected car type to upper case if
-		# it is an abbreviated name.
-		if car_type in self._get_abbrev_types(car_types):
-			car_type = car_type.upper()
+		# Create a string used to determine whether to write
+		# "day" (1) or "days" (otherwise)
+		if days == 1:
+			plural = ""
+		else:
+			plural = "s"
 
 		# Output a message confirming that the rental was successfully
 		# made.
 		print(
 			f"\nOrder successful! "
-			f"You have rented a {car_type} car for {days} days.\n"
+			f"You have rented a {type_name} car for {days} day{plural}.\n"
 			f"The car's vehicle registration plate is {car_id}.\n"
 			f"You will be charged £{r:.2f} per day.\n"
 			f"We hope that you enjoy our service.\n")
@@ -269,6 +278,13 @@ class RentalShop:
 		# Calculate the total cost.
 		total = period_days * rate_per_day
 
+		# Create a string used to determine whether to write
+		# "day" (1) or "days" (otherwise)
+		if period_days == 1:
+			plural = ""
+		else:
+			plural = "s"
+
 		"""
 		Finally output the billing information, showing:
 		- Customer Number, 
@@ -283,7 +299,7 @@ class RentalShop:
 			f"Customer Number:              {customer_number}\n"
 			f"Vehicle Registration Number:  {car_number}\n"
 			f"Car Type:                     {c_type}\n"
-			f"Period:                       {period_days} days\n"
+			f"Period:                       {period_days} day{plural}\n"
 			f"------------------------------\n"
 			f"Rate:                         £{rate_per_day:.2f} per day\n"
 			f"Total:                        £{total:.2f}\n"

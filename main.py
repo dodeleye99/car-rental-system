@@ -1,3 +1,8 @@
+"""
+Author: "An anonymous LU London student taking 23LLP109, who happens to
+be passionate about the art of coding :)"
+"""
+
 from customer import Customer, VIPCustomer
 from rental_shop import RentalShop
 
@@ -100,7 +105,7 @@ def init_objects():
 	# Otherwise (i.e. they do not have a loyalty card), accept them as
 	# a normal customer.
 	else:
-		print("(Preceding as regular customer.)")
+		print("(Proceeding as ordinary customer.)")
 		# Instantiate a Customer object with the inputted customer number.
 		customer = Customer(customer_number)
 
@@ -138,24 +143,41 @@ def rent_car(customer: Customer, car_shop: RentalShop):
 	# === Prompt user for the type of car to rent and number of days ===
 
 	# Convert input of car_type to lowercase so that it is
-	# not case-sensitive.
-	car_type = input("Enter the type of car you would like to rent:\n").lower()
-	days = input("Enter the number of days you would like to rent the car:\n")
+	# not case-sensitive. Also strip leading/trailing whitespace.
+	car_type = input(
+		"Enter the type of car you would like to rent:\n"
+	).lower().strip()
 
-	# Validation 1: ensure that the number of days is an integer.
-	if not days.isdigit():
-		print("The number of days must be an integer!")
-	else:
-		# Convert to an integer (since we can be sure that it is one)
+	# Return to main loop if nothing was entered.
+	if len(car_type) == 0:
+		print("(Nothing entered. Returning to main menu.)")
+		return
+
+	days = input(
+		"Enter the number of days you would like to rent the car:\n"
+	).strip()
+
+	"""
+	Validation 1: ensure that the number of days is an integer.
+	"""
+
+	# Attempt to cast it to an integer. If it causes an error,
+	# then catch it, output appropriate message, and exit.
+	try:
 		days = int(days)
+	except ValueError:
+		print("The number of days must be an integer!")
+		return
 
-		# Validation 2: ensure that number of days is greater than 0.
-		if days <= 0:
-			print("The number of days must be positive!")
-		else:
-			# At this point, validation is complete. Have the customer
-			# ask the car shop to make the rental.
-			customer.rent_car(car_type, days, car_shop)
+	"""
+	Validation 2: ensure that number of days is greater than 0.
+	"""
+	if days <= 0:
+		print("The number of days must be positive!")
+	else:
+		# At this point, validation is complete. Have the customer
+		# ask the car shop to make the rental.
+		customer.rent_car(car_type, days, car_shop)
 
 
 def return_car(customer: Customer, car_shop: RentalShop):
@@ -170,12 +192,18 @@ def return_car(customer: Customer, car_shop: RentalShop):
 	print_menu_text("RETURNING A CAR")
 
 	# Have the user enter the "number plate" of the car they are returning.
+	# (Convert to uppercase, and strip leading/trailing whitespace)
 	car_number = input(
 		"Enter the vehicle registration number of the car you would like "
-		"to return:\n")
+		"to return:\n"
+	).upper().strip()
 
-	# Have the customer return the car to the rental shop.
-	customer.return_car(car_number, car_shop)
+	# Do nothing if the input was blank.
+	if len(car_number) == 0:
+		print("(Nothing entered. Returning to main menu.)")
+	else:
+		# Have the customer return the car to the rental shop.
+		customer.return_car(car_number, car_shop)
 
 
 # ============ THE MAIN FUNCTION ============
@@ -213,11 +241,11 @@ def main():
 			"3 RETURN a rented car.\n"
 			"4 EXIT the program."
 		)
-		# Get the user's input (converting it to lowercase.)
+		# Get the user's input (converting it to lowercase + strip)
 		user_option = input(
 			"Input the number (or the first word) "
 			"corresponding to your option:\n"
-		).lower()
+		).lower().strip()
 
 		# Inquire : customer requests user stock
 		if user_option in ("1", "inquire"):
