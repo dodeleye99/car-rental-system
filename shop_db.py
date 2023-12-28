@@ -80,7 +80,7 @@ class ShopDatabase:
 		"""
 
 		# Set up the database if it does not yet exist.
-		self.__check_db_exists(create=True)
+		self._check_db_exists(create=True)
 
 	# === INTERFACE METHODS ===
 
@@ -152,7 +152,7 @@ class ShopDatabase:
 		self._store_data(data, _CAR_RENTALS)
 
 	# ======== INTERNAL METHODS ========
-	def __check_db_exists(self, create=True):
+	def _check_db_exists(self, create=True):
 		"""
 		To be called during initialisation to check whether a database
 		for the shop actually exists. If not, and the create parameter

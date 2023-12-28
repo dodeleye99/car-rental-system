@@ -87,7 +87,7 @@ class RentalShop:
 		# returning False to indicate an unsuccessful process.
 		if car_type not in car_types.index:
 			print(
-				f"\nSorry, but the car type you entered ({car_type})"
+				f"\nSorry, but the car type you entered ({car_type}) "
 				f"is unknown to the system."
 			)
 			return False
@@ -294,18 +294,18 @@ class RentalShop:
 		- Daily Rate,
 		- Total Payment.
 		"""
-		print("\n====== CAR RENTAL BILL ======")
+		# (Create a "ribbon header" for the bill)
+		print("\n" + " CAR RENTAL BILL ".center(60, "="))
 		print(
 			f"Customer Number:              {customer_number}\n"
 			f"Vehicle Registration Number:  {car_number}\n"
 			f"Car Type:                     {c_type}\n"
 			f"Period:                       {period_days} day{plural}\n"
-			f"------------------------------\n"
+			f"{'-'*60}\n"    # (Divider line)
 			f"Rate:                         £{rate_per_day:.2f} per day\n"
 			f"Total:                        £{total:.2f}\n"
-			f"==============================\n"
+			f"{'=' * 60}\n"  # (Ribbon "footer")
 		)
-
 		# Output True to indicate that the request was successful.
 		return True
 

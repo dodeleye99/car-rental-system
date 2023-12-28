@@ -43,3 +43,6 @@ __pycache__
 
 # Special directory used by program
 .databases
+
+# Environment files
+*.yml
