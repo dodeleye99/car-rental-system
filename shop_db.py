@@ -375,7 +375,7 @@ class ShopDatabase:
 		--------------------------------------------------------------------
 		type_name   abbrev       short_term_rate   long_term_rate   vip_rate
 		--------------------------------------------------------------------
-		hatchback   False         0.0              50.0             100.0
+		hatchback   False        30.0              50.0             100.0
 		sedan       False        25.0              40.0              90.0
 		suv         True         20.0              35.0              80.0
 		"""

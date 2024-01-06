@@ -100,6 +100,19 @@ def init_objects():
 	# member.
 	if validated:
 		print("Welcome VIP customer!")
+
+		"""
+		==== TECHNICAL NOTE ====
+		A VIPCustomer instance can easily be treated and
+		represented as a Customer object, as it INHERITS from the 
+		Customer class and keeps the exact same INTERFACE (even if it
+		differs in implementation). 
+		
+		Through Python's DYNAMIC BINDING mechanism (enabling 
+		POLYMORPHISM), any call to the object's interface will still
+		work as intended (that is, according to its specific 
+		implementation) during runtime.
+		"""
 		customer = VIPCustomer(customer_number, loyalty_number)
 
 	# Otherwise (i.e. they do not have a loyalty card), accept them as
@@ -318,5 +331,6 @@ def print_menu_text(label, nchar=80, nl_1=True, nl_2=True):
 	print(s)
 
 
+# (Only run it if executed as the program's main entry point.)
 if __name__ == "__main__":
 	main()
