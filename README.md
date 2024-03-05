@@ -13,6 +13,11 @@ This repository consists of source code for an application that implements a tri
 It automatically manages the stock, and issues a bill upon receiving a return. The system can be used as a prototype for car retailer companies that have yet to transform their businesses into those which take advantage of digital technology. 
 As it only act as an outline, a terminal interface is used for all input and output, making it simple enough to be adapted to any platform of choice.
 
+# Demo
+<p align="center">
+  <img src="./demo.svg" />
+</p>
+
 # Referencing
 
 1. Chit S.M. _et al._ (2020) 'A Prototype of a Mobile Car Rental System', _Journal of Physics: Conference Series_, 1529(3), article number 032023. Available at: [https://dx.doi.org/10.1088/1742-6596/1529/3/032023](https://dx.doi.org/10.1088/1742-6596/1529/3/032023) (Accessed 01 Dec 2023).
